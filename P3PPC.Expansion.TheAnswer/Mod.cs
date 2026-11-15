@@ -7,7 +7,7 @@ using Reloaded.Hooks.Definitions;
 using Reloaded.Hooks.Definitions.Enums;
 using Reloaded.Hooks.ReloadedII.Interfaces;
 using Reloaded.Memory.SigScan.ReloadedII.Interfaces;
-using Reloaded.Memory.Sources;
+using Reloaded.Memory;
 using Reloaded.Mod.Interfaces;
 using System.Diagnostics;
 using System.IO;
@@ -47,16 +47,15 @@ namespace P3PPC.Expansion.TheAnswer
             }
 
             IReloadedHooks hooks = context.Hooks ?? throw new InvalidOperationException("Reloaded.Hooks is unavailable.");
-            IMemory memory = Memory.Instance;
 
             _journeyAnswerSelect = new JourneyAnswerSelect();
             _journeyAnswerSelect.Hook(hooks, startupScanner);
 
             _p3pSaveDataAegis = new P3PSaveDataAegis();
-            _p3pSaveDataAegis.Hook(hooks, memory);
+            _p3pSaveDataAegis.Hook(hooks);
 
             _agsSaveFileUI = new AGSSaveFileUI();
-            _agsSaveFileUI.Hook(hooks, memory);
+            _agsSaveFileUI.Hook(hooks);
         }
 
 #pragma warning disable CS8618

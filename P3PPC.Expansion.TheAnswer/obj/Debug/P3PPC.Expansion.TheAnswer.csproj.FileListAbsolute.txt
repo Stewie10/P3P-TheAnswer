@@ -23,3 +23,14 @@ C:\Users\stewi\Documents\P5D\P3P_TheAnswer\P3P-The-Answer\P3PPC.Expansion.TheAns
 C:\Users\stewi\Documents\P5D\P3P_TheAnswer\P3P-The-Answer\P3PPC.Expansion.TheAnswer\obj\Debug\refint\P3PPC.Expansion.TheAnswer.dll
 C:\Users\stewi\Documents\P5D\P3P_TheAnswer\P3P-The-Answer\P3PPC.Expansion.TheAnswer\obj\Debug\P3PPC.Expansion.TheAnswer.pdb
 C:\Users\stewi\Documents\P5D\P3P_TheAnswer\P3P-The-Answer\P3PPC.Expansion.TheAnswer\obj\Debug\ref\P3PPC.Expansion.TheAnswer.dll
+C:\Users\stewi\Documents\P5D\P3P_TheAnswer\P3P-TheAnswer\P3PPC.Expansion.TheAnswer\obj\Debug\P3PPC.Expansion.TheAnswer.csproj.AssemblyReference.cache
+C:\Users\stewi\Documents\P5D\P3P_TheAnswer\P3P-TheAnswer\P3PPC.Expansion.TheAnswer\obj\Debug\P3PPC.Expansion.TheAnswer.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\stewi\Documents\P5D\P3P_TheAnswer\P3P-TheAnswer\P3PPC.Expansion.TheAnswer\obj\Debug\P3PPC.Expansion.TheAnswer.AssemblyInfoInputs.cache
+C:\Users\stewi\Documents\P5D\P3P_TheAnswer\P3P-TheAnswer\P3PPC.Expansion.TheAnswer\obj\Debug\P3PPC.Expansion.TheAnswer.AssemblyInfo.cs
+C:\Users\stewi\Documents\P5D\P3P_TheAnswer\P3P-TheAnswer\P3PPC.Expansion.TheAnswer\obj\Debug\P3PPC.Expansion.TheAnswer.csproj.CoreCompileInputs.cache
+C:\Users\stewi\Documents\P5D\P3P_TheAnswer\P3P-TheAnswer\P3PPC.Expansion.TheAnswer\obj\Debug\P3PPC.Expansion.TheAnswer.sourcelink.json
+C:\Users\stewi\Documents\P5D\P3P_TheAnswer\P3P-TheAnswer\P3PPC.Expansion.TheAnswer\obj\Debug\P3PPC.Ex.ABB3A6C1.Up2Date
+C:\Users\stewi\Documents\P5D\P3P_TheAnswer\P3P-TheAnswer\P3PPC.Expansion.TheAnswer\obj\Debug\P3PPC.Expansion.TheAnswer.dll
+C:\Users\stewi\Documents\P5D\P3P_TheAnswer\P3P-TheAnswer\P3PPC.Expansion.TheAnswer\obj\Debug\refint\P3PPC.Expansion.TheAnswer.dll
+C:\Users\stewi\Documents\P5D\P3P_TheAnswer\P3P-TheAnswer\P3PPC.Expansion.TheAnswer\obj\Debug\P3PPC.Expansion.TheAnswer.pdb
+C:\Users\stewi\Documents\P5D\P3P_TheAnswer\P3P-TheAnswer\P3PPC.Expansion.TheAnswer\obj\Debug\ref\P3PPC.Expansion.TheAnswer.dll

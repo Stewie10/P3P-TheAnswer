@@ -344,15 +344,15 @@
           }
         }
       },
-      "Reloaded.Memory/8.0.1": {
+      "Reloaded.Memory/9.4.3": {
         "type": "package",
         "compile": {
-          "lib/net6.0/Reloaded.Memory.dll": {
+          "lib/net8.0/Reloaded.Memory.dll": {
             "related": ".xml"
           }
         },
         "runtime": {
-          "lib/net6.0/Reloaded.Memory.dll": {
+          "lib/net8.0/Reloaded.Memory.dll": {
             "related": ".xml"
           }
         }
@@ -1040,24 +1040,33 @@
         "reloaded.hooks.definitions.nuspec"
       ]
     },
-    "Reloaded.Memory/8.0.1": {
-      "sha512": "GGshpShMtSsa7T7kMhm339nim0beVZGYH/OfTLkuDmjf6Ir/nY9u6m9US1J44YlcEFSVcexvENUf1a9fCfkZNg==",
+    "Reloaded.Memory/9.4.3": {
+      "sha512": "j+pev0mS1guirfo4auPfclXKJKm9N0i3CIEY1WbLo46awhRwVsP2GuD7YFTtxRVUHZzjnWJLFhqP4zh/v7mf6A==",
       "type": "package",
-      "path": "reloaded.memory/8.0.1",
+      "path": "reloaded.memory/9.4.3",
       "files": [
         ".nupkg.metadata",
         ".signature.p7s",
-        "LICENSE",
-        "NuGet-Icon.png",
+        "LICENSE.md",
+        "README.md",
+        "Reloaded-Icon.png",
+        "lib/net48/Reloaded.Memory.dll",
+        "lib/net48/Reloaded.Memory.xml",
         "lib/net5.0/Reloaded.Memory.dll",
         "lib/net5.0/Reloaded.Memory.xml",
         "lib/net6.0/Reloaded.Memory.dll",
         "lib/net6.0/Reloaded.Memory.xml",
+        "lib/net7.0/Reloaded.Memory.dll",
+        "lib/net7.0/Reloaded.Memory.xml",
+        "lib/net8.0/Reloaded.Memory.dll",
+        "lib/net8.0/Reloaded.Memory.xml",
+        "lib/netcoreapp3.1/Reloaded.Memory.dll",
+        "lib/netcoreapp3.1/Reloaded.Memory.xml",
         "lib/netstandard2.0/Reloaded.Memory.dll",
         "lib/netstandard2.0/Reloaded.Memory.xml",
         "lib/netstandard2.1/Reloaded.Memory.dll",
         "lib/netstandard2.1/Reloaded.Memory.xml",
-        "reloaded.memory.8.0.1.nupkg.sha512",
+        "reloaded.memory.9.4.3.nupkg.sha512",
         "reloaded.memory.nuspec"
       ]
     },
@@ -1194,7 +1203,7 @@
   "projectFileDependencyGroups": {
     "net9.0-windows7.0": [
       "Reloaded.Hooks.Definitions >= 1.15.0",
-      "Reloaded.Memory >= 8.0.1",
+      "Reloaded.Memory >= 9.4.3",
       "Reloaded.Memory.SigScan.ReloadedII.Interfaces >= 1.2.0",
       "Reloaded.Memory.Sigscan.Definitions >= 1.1.1",
       "Reloaded.Mod.Interfaces >= 2.4.0",
@@ -1262,7 +1271,7 @@
           },
           "Reloaded.Memory": {
             "target": "Package",
-            "version": "[8.0.1, )"
+            "version": "[9.4.3, )"
           },
           "Reloaded.Memory.SigScan.ReloadedII.Interfaces": {
             "target": "Package",
@@ -1310,7 +1319,7 @@
             "privateAssets": "all"
           }
         },
-        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\11.0.100-rc.3.26522.148/PortableRuntimeIdentifierGraph.json"
+        "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\11.0.100/PortableRuntimeIdentifierGraph.json"
       }
     }
   }

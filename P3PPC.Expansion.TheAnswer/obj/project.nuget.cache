@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "dgSpecHash": "THE4xfz1ZD8=",
+  "dgSpecHash": "Vo/McqgwUSs=",
   "success": true,
   "projectFilePath": "C:\\Users\\stewi\\Documents\\P5D\\P3P_TheAnswer\\P3P-TheAnswer\\P3PPC.Expansion.TheAnswer\\P3PPC.Expansion.TheAnswer.csproj",
   "expectedPackageFiles": [
@@ -23,7 +23,7 @@
     "C:\\Users\\stewi\\.nuget\\packages\\ncalcsync\\5.4.2\\ncalcsync.5.4.2.nupkg.sha512",
     "C:\\Users\\stewi\\.nuget\\packages\\parlot\\1.3.5\\parlot.1.3.5.nupkg.sha512",
     "C:\\Users\\stewi\\.nuget\\packages\\reloaded.hooks.definitions\\1.15.0\\reloaded.hooks.definitions.1.15.0.nupkg.sha512",
-    "C:\\Users\\stewi\\.nuget\\packages\\reloaded.memory\\8.0.1\\reloaded.memory.8.0.1.nupkg.sha512",
+    "C:\\Users\\stewi\\.nuget\\packages\\reloaded.memory\\9.4.3\\reloaded.memory.9.4.3.nupkg.sha512",
     "C:\\Users\\stewi\\.nuget\\packages\\reloaded.memory.sigscan.definitions\\1.1.1\\reloaded.memory.sigscan.definitions.1.1.1.nupkg.sha512",
     "C:\\Users\\stewi\\.nuget\\packages\\reloaded.memory.sigscan.reloadedii.interfaces\\1.2.0\\reloaded.memory.sigscan.reloadedii.interfaces.1.2.0.nupkg.sha512",
     "C:\\Users\\stewi\\.nuget\\packages\\reloaded.mod.interfaces\\2.4.0\\reloaded.mod.interfaces.2.4.0.nupkg.sha512",

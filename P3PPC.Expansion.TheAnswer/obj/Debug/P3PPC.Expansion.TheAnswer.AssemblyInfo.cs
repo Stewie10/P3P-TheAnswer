@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("P3PPC.Expansion.TheAnswer")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+17eb52e8ddfb79cdd48543f3aede0966aaf2def7")]
 [assembly: System.Reflection.AssemblyProductAttribute("P3PPC.Expansion.TheAnswer")]
 [assembly: System.Reflection.AssemblyTitleAttribute("P3PPC.Expansion.TheAnswer")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

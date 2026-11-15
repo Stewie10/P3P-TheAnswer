@@ -8,20 +8,71 @@ using static P3PPC.Expansion.TheAnswer.UI.Colours;
 
 namespace P3PPC.Expansion.TheAnswer.UI.UI
 {
-    internal unsafe class Menu
+    internal unsafe class TitleMenu
     {
         [StructLayout(LayoutKind.Explicit)]
         internal struct MenuInfo
         {
-            [FieldOffset(88)]
-            internal DisplayInfo Text;
+            [FieldOffset(0)]
+            internal int next;
+
+            [FieldOffset(4)]
+            internal uint unk_4;
+
+            [FieldOffset(8)]
+            internal float unk_8;
+
+            [FieldOffset(12)]
+            internal float unk_c;
+
+            [FieldOffset(16)]
+            internal MenuInfo* animPtr;
+
+            [FieldOffset(20)]
+            internal int unk_14;
+
+            [FieldOffset(24)]
+            internal uint unk_18;
+
+            [FieldOffset(28)]
+            internal int unk_1c;
+
+            [FieldOffset(32)]
+            internal int unk_20;
+
+            [FieldOffset(36)]
+            internal int unk_24;
+
+            [FieldOffset(40)]
+            internal int scrollIndex;
+
+            [FieldOffset(44)]
+            internal int prevScrollIndex;
+
+            [FieldOffset(48)]
+            internal int unk_30;
+
+            [FieldOffset(56)]
+            internal float unk_38;
+
+            [FieldOffset(72)]
+            internal long buttonPtr;
+
+            [FieldOffset(80)]
+            internal PakFile* titleFile;
+
+            [FieldOffset(100)]
+            internal int newGame;
+
+            [FieldOffset(104)]
+            internal int sprIndex;
         }
 
         [StructLayout(LayoutKind.Explicit)]
-        internal struct DisplayInfo
+        internal struct PakFile
         {
-            [FieldOffset(8)]
-            internal int SelectedSlot;
+            [FieldOffset(88)]
+            internal nint spr;
         }
 
         [StructLayout(LayoutKind.Sequential)]
@@ -36,13 +87,6 @@ namespace P3PPC.Expansion.TheAnswer.UI.UI
 
             // Not what this actually is but we're using it to change colours
             internal Colour FgColour;
-        }
-
-        internal enum SkillTextType : short
-        {
-            Normal = 0,
-            Selected = 1,
-            New = 5,
         }
     }
 }

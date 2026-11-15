@@ -3,7 +3,7 @@ using Reloaded.Hooks.Definitions;
 using Reloaded.Hooks.Definitions.Enums;
 using Reloaded.Hooks.Definitions.X64;
 using Reloaded.Memory.SigScan.ReloadedII.Interfaces;
-using Reloaded.Memory.Sources;
+using Reloaded.Memory;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -24,7 +24,7 @@ namespace P3PPC.Expansion.TheAnswer.UI
         internal QueuedMessageWaitingDelegate QueuedMessageWaiting;
         internal AfterQueuedMessageDelegate AfterQueuedMessage;
 
-        private IMemory _memory;
+        private Memory _memory;
 
         internal bool* IsFemc;
 

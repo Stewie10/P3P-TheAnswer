@@ -58,7 +58,7 @@
             },
             "Reloaded.Memory": {
               "target": "Package",
-              "version": "[8.0.1, )"
+              "version": "[9.4.3, )"
             },
             "Reloaded.Memory.SigScan.ReloadedII.Interfaces": {
               "target": "Package",
@@ -106,7 +106,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\11.0.100-rc.3.26522.148/PortableRuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\11.0.100/PortableRuntimeIdentifierGraph.json"
         }
       }
     }

@@ -10,9 +10,13 @@ using Reloaded.Hooks.Definitions;
 using Reloaded.Hooks.Definitions.Enums;
 using Reloaded.Hooks.Definitions.X64;
 using Reloaded.Memory.SigScan.ReloadedII.Interfaces;
-using Reloaded.Memory.Sources;
+using Reloaded.Memory;
 using System.Net;
-using static P3PPC.Expansion.TheAnswer.IsTheAnswerSetup;
+using static P3PPC.Expansion.TheAnswer.KwlnTask.KwlnTaskP3P;
+using static P3PPC.Expansion.TheAnswer.Enums.ScenarioMode;
+using static P3PPC.Expansion.TheAnswer.FieldOffsets.LoadFile;
+using static P3PPC.Expansion.TheAnswer.TblFiles.HFileSetupItemTblWork;
+using static P3PPC.Expansion.TheAnswer.HFileSetupWork;
 
 namespace P3PPC.Expansion.TheAnswer
 {
@@ -20,64 +24,99 @@ namespace P3PPC.Expansion.TheAnswer
     {
         [ThreadStatic]
 
-        internal SetTaskToMemoryDelegate _setTaskToMemoryHook;
-        internal LoadTaskDelegate _loadTaskHook;
-        internal FreeMemoryDelegate _setFreeMemoryHook;
-        internal SetStatDelegate _setStatHook;
-        public TheJourneyDelegate _theJourneyHook;
-        public TheAnswerDelegate _theAnswerHook;
-        public IReverseWrapper<TheJourneyDelegate> _theJourneyReverseWrapper;
-        public IReverseWrapper<TheAnswerDelegate> _theAnswerReverseWrapper;
+        internal static RwCallocDelegate _rwCallocHook;
+        internal static kwlnTaskCreateWithAutoPriorityDelegate _kwlnTaskCreateWithAutoPriorityHook;
+        internal static FreeMemoryDelegate _setFreeMemoryHook;
+        internal static kwlnTaskGetStateDelegate _kwlnTaskGetStateHook;
+        internal static LoadFileDelegate _loadFileHook;
+        internal static IsFileLoadedDelegate _isFileLoadedHook;
+        internal static DestroyDataDelegate _destroyDataHook;
+        internal static ItemTblDataDelegate _itemTblDataHook;
+        internal IReverseWrapper<TheJourneyDelegate> _theJourneyReverseWrapper;
+        internal IReverseWrapper<TheAnswerDelegate> _theAnswerReverseWrapper;
 
         [Function(CallingConventions.Microsoft)]
-        internal delegate long SetTaskToMemoryDelegate(int param_1, int param_2, int param_3);
+        internal delegate void* RwCallocDelegate(uint elemCount, int elemSize, uint hint);
 
         [Function(CallingConventions.Microsoft)]
-        internal delegate long LoadTaskDelegate(long param_1, string taskName, int param_3, int param_4, int param_5, long taskFunction, long endTaskFunction, long getTaskMemory);
+        internal delegate KwlnTaskk* kwlnTaskCreateWithAutoPriorityDelegate(KwlnTaskk* parentTask, string taskName, int param_3, int param_4, int param_5, void* taskFunction, void* destroyTaskFunction, void* workData);
 
         [Function(CallingConventions.Microsoft)]
-        internal delegate void FreeMemoryDelegate(long param_1);
+        internal delegate void FreeMemoryDelegate(void* ptr);
 
         [Function(CallingConventions.Microsoft)]
-        internal delegate int SetStatDelegate(int param_1);
+        internal delegate uint kwlnTaskGetStateDelegate(KwlnTaskk* param_1);
 
         [Function(CallingConventions.Microsoft)]
-        public delegate long TheJourneyDelegate();
+        internal delegate KwlnTaskk* TheJourneyDelegate();
 
         [Function(CallingConventions.Microsoft)]
-        public delegate long TheAnswerDelegate();
-        private IMemory _memory;
-        internal static int isTheAnswerFlag;
-        private SetupInfo* param_1SetupJourney;
-        private int param_1SetupAnswer;
-        private long param_1FreeMemJourney;
-        private long param_1FreeMemAnswer;
-        private long param_1ItemTblJourney;
-        private long param_1BtlTableJourney;
-        private long param_1ReadDataJourney;
-        private long param_1BtlTableAnswer;
-        private long param_1ReadDataAnswer;
-        private ulong _setJourneyItemTblReadPtrHook;
-        internal ulong _setJourneyBtlTableReloadPtrHook;
-        internal ulong _setJourneyReadStartupDataPtrHook;
-        internal ulong _setAnswerBtlTableReloadPtrHook;
-        internal ulong _setAnswerReadStartupDataPtrHook;
-        private GetFiles* _fileSetupIndex;
+        internal delegate KwlnTaskk* TheAnswerDelegate();
+
+        [Function(CallingConventions.Microsoft)]
+        internal delegate FileData* LoadFileDelegate(string path, uint fileMode);
+
+        [Function(CallingConventions.Microsoft)]
+        internal delegate uint IsFileLoadedDelegate(FileData* file);
+
+        [Function(CallingConventions.Microsoft)]
+        internal delegate byte DestroyDataDelegate(FileData* file);
+
+        [Function(CallingConventions.Microsoft)]
+        internal delegate byte ItemTblDataDelegate();
+        private Memory _memory;
+        internal static Scenario isTheAnswerFlag;
+        private static KwlnTaskk* _honpenTask;
+        private static KwlnTaskk* _gojitudanTask;
+        private static KwlnTaskk* _gojitudanItemTblTask;
+        internal static HFileSetupFuncHonpen _setJourneyItemTblReadPtrHook;
+        internal static HFileSetupFuncHonpen _setJourneyBtlTableReloadPtrHook;
+        internal static HFileSetupFuncHonpen _setJourneyReadStartupDataPtrHook;
+        internal static HFileSetupFuncGojitudan _createGojitudanItemTblTask = CreateGojitudanItemTblTask;
+        internal static HFileSetupFuncGojitudan _setAnswerBtlTableReloadPtrHook;
+        internal static HFileSetupFuncGojitudan _setAnswerReadStartupDataPtrHook;
+
+        [Function(CallingConventions.Microsoft)]
+        internal delegate KwlnTaskk* HFileSetupFuncHonpen(KwlnTaskk* parent);
+        internal readonly HFileSetupFuncHonpen[] sHonpenFuncs =
+        {
+            _setJourneyItemTblReadPtrHook,
+            _setJourneyBtlTableReloadPtrHook,
+            _setJourneyReadStartupDataPtrHook,
+            null
+        };
+
+        [Function(CallingConventions.Microsoft)]
+        internal delegate KwlnTaskk* HFileSetupFuncGojitudan(KwlnTaskk* parent);
+        internal readonly HFileSetupFuncGojitudan[] sGojitudanFuncs =
+        {
+            _createGojitudanItemTblTask,
+            _setAnswerBtlTableReloadPtrHook,
+            _setAnswerReadStartupDataPtrHook,
+            null
+        };
+
+        internal static int KWLNTASK_STOP = -1;
+        internal static int KWLNTASK_CONTINUE = 0;
+        internal static int KWLNTASK_STATE_NULL = 0;
+        internal static int KWLNTASK_STATE_STAGED = 1;
+        internal static int KWLNTASK_STATE_RUNNING = 2;
+        internal static int KWLNTASK_STATE_DESTROY = 3;
 
         internal IsTheAnswer(IReloadedHooks hooks)
         {
             _memory = Memory.Instance;
 
-            isTheAnswerFlag = (int)_memory.Allocate(4);
+            isTheAnswerFlag = (Scenario)_memory.Allocate(4).Address;
 
             Utils.SigScan("48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 57 48 83 EC 20 48 8B F1 41 8B F8 48 8D 0D ?? ?? ?? ?? 48 8B DA E8 ?? ?? ?? ?? E8 ?? ?? ?? ?? 48 0F AF F3 8B D7", "SetTaskToMemory", address =>
             {
-                _setTaskToMemoryHook = hooks.CreateWrapper<SetTaskToMemoryDelegate>(address, out _);
+                _rwCallocHook = hooks.CreateWrapper<RwCallocDelegate>(address, out _);
             });
 
             Utils.SigScan("48 89 5C 24 ?? 48 89 6C 24 ?? 56 41 56 41 57 48 83 EC 20 48 89 CD 45 89 CE 48 8D 0D ?? ?? ?? ?? 45 89 C7 48 89 D6 E8 ?? ?? ?? ?? 80 3E 00 75 15 8B 15", "LoadTask", address =>
             {
-                _loadTaskHook = hooks.CreateWrapper<LoadTaskDelegate>(address, out _);
+                _kwlnTaskCreateWithAutoPriorityHook = hooks.CreateWrapper<kwlnTaskCreateWithAutoPriorityDelegate>(address, out _);
             });
 
             Utils.SigScan("48 89 5C 24 ?? 48 89 74 24 ?? 57 48 83 EC 20 48 8B F9 48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? E8 ?? ?? ?? ?? 48 8B 5F F8 8B F0 48 85 DB 75 15 8B 15 ?? ?? ?? ?? 48 8D 0D", "FreeMemory", address =>
@@ -87,194 +126,250 @@ namespace P3PPC.Expansion.TheAnswer
 
             Utils.SigScan("48 83 EC 48 48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 8B 15 ?? ?? ?? ?? 48 8D 0D ?? ?? ?? ?? 83 C2 04 E8 ?? ?? ?? ?? BA ?? ?? ?? ?? 41 B8 ?? ?? ?? ?? 8D 4A E1 E8 ?? ?? ?? ?? 48 85 C0 74 39 48 89 44 24 ?? 48 8D 0D ?? ?? ?? ?? 48 8D 05 ?? ?? ?? ?? 45 33 C9 48 89 44 24 ?? 45 33 C0 48 8D 05 ?? ?? ?? ?? BA ?? ?? ?? ?? 48 89 44 24 ?? E8 ?? ?? ?? ?? 48 85 C0", "ItemTblDataRead", address =>
             {
-                _setJourneyItemTblReadPtrHook = Utils.GetGlobalAddress(address);
+                sHonpenFuncs[0] = hooks.CreateWrapper<HFileSetupFuncHonpen>(address, out _);
             });
 
             Utils.SigScan("40 53 48 83 EC 40 48 8B D9 48 8D 0D 42 8E 5F 03", "BtlTableReload", address =>
             {
-                _setJourneyBtlTableReloadPtrHook = Utils.GetGlobalAddress(address);
+                sHonpenFuncs[1] = hooks.CreateWrapper<HFileSetupFuncHonpen>(address, out _);
             });
 
             Utils.SigScan("48 89 5C 24 ?? 57 48 83 EC 40 48 89 CF 48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 8B 15 ?? ?? ?? ?? 48 8D 0D ?? ?? ?? ?? 83 C2 04 E8 ?? ?? ?? ?? 8B 15 ?? ?? ?? ?? 81 F2 ?? ?? ?? ?? 41 B8 ?? ?? ?? ?? 8D 4A D9 E8 ?? ?? ?? ?? 48 89 C3 48 85 C0 75 12 48 8B 5C 24 ?? 48 83 C4 40 5F C3 44 32 05 ?? ?? ?? ?? 48 89 5C 24 ?? 48 8D 05 ?? ?? ?? ?? 48 89 44 24 ?? 48 8D 15 ?? ?? ?? ?? 45 31 C9 48 8D 05 ?? ?? ?? ?? 48 89 44 24 ?? 48 89 F9 C7 44 24 ?? ?? ?? ?? ?? 45 8D 41 0F E8 ?? ?? ?? ?? C7 43 04 00 00 00 00", "ReadStartupData", address =>
             {
-                _setJourneyReadStartupDataPtrHook = Utils.GetGlobalAddress(address);
+                sHonpenFuncs[2] = hooks.CreateWrapper<HFileSetupFuncHonpen>(address, out _);
             });
 
             Utils.SigScan("40 53 48 83 EC 40 48 8B D9 48 8D 0D 52 8D 5F 03", "BtlTableReloadAnswer", address =>
             {
-                _setAnswerBtlTableReloadPtrHook = Utils.GetGlobalAddress(address);
+                sGojitudanFuncs[1] = hooks.CreateWrapper<HFileSetupFuncGojitudan>(address, out _);
             });
 
             Utils.SigScan("48 89 5C 24 ?? 57 48 83 EC 40 48 8B F9 48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 8B 15 ?? ?? ?? ?? 48 8D 0D ?? ?? ?? ?? 83 C2 04 E8 ?? ?? ?? ?? BA ?? ?? ?? ?? 41 B8 ?? ?? ?? ?? 8D 4A D9 E8 ?? ?? ?? ?? 48 8B D8 48 85 C0 75 0B 48 8B 5C 24 ?? 48 83 C4 40 5F C3 48 89 5C 24 ?? 48 8D 05 ?? ?? ?? ?? 48 89 44 24 ?? 48 8D 15 ?? ?? ?? ?? 45 33 C9 48 8D 05 ?? ?? ?? ?? 48 89 44 24 ?? 48 8B CF C7 44 24 ?? ?? ?? ?? ?? 45 8D 41 0F E8 ?? ?? ?? ?? C7 43 04 01 00 00 00", "ReadStartupDataAnswer", address =>
             {
-                _setAnswerReadStartupDataPtrHook = Utils.GetGlobalAddress(address);
+                sGojitudanFuncs[2] = hooks.CreateWrapper<HFileSetupFuncGojitudan>(address, out _);
             });
 
             Utils.SigScan("40 53 48 83 EC 20 48 89 CB 48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 48 8B 0D ?? ?? ?? ?? 31 C0 4C 8B 15 ?? ?? ?? ?? 41 89 C1 4C 8B 1D ?? ?? ?? ?? 90 45 89 C8 45 85 C9 74 16 41 83 E8 01", "SetStat", address =>
             {
-                _setStatHook = hooks.CreateWrapper<SetStatDelegate>(address, out _);
+                _kwlnTaskGetStateHook = hooks.CreateWrapper<kwlnTaskGetStateDelegate>(address, out _);
+            });
+
+            Utils.SigScan("48 89 5C 24 ?? 55 56 57 41 56 41 57 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 31 E0 48 89 84 24 ?? ?? ?? ?? 48 89 CF 48 89 D3 48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 48 85 DB 4C 8D 74 24 ?? 4C 0F 45 F3 48 83 FF 01", "LoadFile", address =>
+            {
+                _loadFileHook = hooks.CreateWrapper<LoadFileDelegate>(address, out _);
+            });
+
+            Utils.SigScan("40 53 48 83 EC 20 48 8B D9 48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 33 C0 83 7B 04 0C 0F 94 C0", "IsFileLoaded", address =>
+            {
+                _isFileLoadedHook = hooks.CreateWrapper<IsFileLoadedDelegate>(address, out _);
+            });
+
+            Utils.SigScan("40 53 48 83 EC 20 48 89 CB 48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 48 85 DB 0F 84 ?? ?? ?? ?? 83 7B 04 00 74 0D 66 FF 83 ?? ?? ?? ?? 48 83 C4 20 5B C3", "DestroyData", address =>
+            {
+                _destroyDataHook = hooks.CreateWrapper<DestroyDataDelegate>(address, out _);
+            });
+
+            Utils.SigScan("48 83 EC 28 48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 44 6B 05 ?? ?? ?? ?? ?? 48 8D 05 ?? ?? ?? ?? 48 89 05 ?? ?? ?? ?? 44 89 C2 48 01 C2 8B 02 48 83 C2 10 48 89 15 ?? ?? ?? ?? 48 8D 04 40 48 8D 40 04 48 8D 04 82 48 89 05 ?? ?? ?? ?? 48 83 C0 20", "ItemTblData", address =>
+            {
+                _itemTblDataHook = hooks.CreateWrapper<ItemTblDataDelegate>(address, out _);
             });
         }
-        public static void IsTheAnswerHook(int isEnabled)
+        internal static void datSetScenarioMode(Scenario isEnabled)
         {
             isTheAnswerFlag = isEnabled;
             return;
         }
-        public static long IsTheAnswerSet()
+        internal static Scenario IsTheAnswerSet()
         {
             return isTheAnswerFlag;
         }
-        public long TheJourney()
+        internal KwlnTaskk* TheJourney()
         {
-            long setTask;
-            long param_2;
-            string journeyTaskName = $"HonpenFileSetup";
-            long journeySetup = TheJourneySetup(param_1SetupJourney);
-            long journeyFreeMem = FreeMemoryJourney(param_1FreeMemJourney);
+            SetupWork* work;
+            KwlnTaskk* task;
+            void* journeySetup = TheJourneySetup(_honpenTask);
+            void* journeyFreeMem = DestroyHonpenTask(_honpenTask);
 
-            setTask = _setTaskToMemoryHook(1, 12, 0x40000);
-            if (setTask == 0)
+            work = (SetupWork*)_rwCallocHook(1, sizeof(SetupWork), 0x40000);
+            if (work == null)
             {
-                param_2 = 0;
+                return null;
             }
-            else
+            task = _kwlnTaskCreateWithAutoPriorityHook(null, "HonpenFileSetup", 15, 0, 0, journeySetup, journeyFreeMem, work);
+            if (task == null)
             {
-                param_2 = _loadTaskHook(0, journeyTaskName, 15, 0, 0, journeySetup, journeyFreeMem, (int)setTask);
-                if (param_2 == 0)
-                {
-                    param_2 = 0;
-                }
-                else
-                {
-                    IsTheAnswerHook(0);
-                }
+                return null;
             }
-            return param_2;
+            datSetScenarioMode(Scenario.Journey);
+            return task;
         }
+        internal KwlnTaskk* TheAnswer()
+        {
+            SetupWork* work;
+            KwlnTaskk* task;
+            void* answerSetup = TheAnswerSetup(_gojitudanTask);
+            void* answerFreeMem = DestroyGojitudanTask(_gojitudanTask);
 
-        public long TheAnswer()
+            work = (SetupWork*)_rwCallocHook(1, sizeof(SetupWork), 0x40000);
+            if (work == null)
+            {
+                return null;
+            }
+            task = _kwlnTaskCreateWithAutoPriorityHook(null, "GojitudanFileSetup", 15, 0, 0, answerSetup, answerFreeMem, work);
+            if (task == null)
+            {
+                return null;
+            }
+            datSetScenarioMode(Scenario.Answer);
+            return task;
+        }
+        private void* TheJourneySetup(KwlnTaskk* honpenTask)
         {
-            long setTask;
-            long param_2;
-            string answerTaskName = $"GojitudanFileSetup";
-            long answerSetup = TheAnswerSetup(param_1SetupAnswer);
-            long answerFreeMem = FreeMemoryAnswer(param_1FreeMemAnswer);
+            SetupWork* work;
+            HFileSetupFuncHonpen[] funcs = new HFileSetupFuncHonpen[4];
 
-            setTask = _setTaskToMemoryHook(1, 12, 0x40000);
-            if (setTask == 0)
-            {
-                param_2 = 0;
-            }
-            else
-            {
-                param_2 = _loadTaskHook(0, answerTaskName, 15, 0, 0, answerSetup, answerFreeMem, (int)setTask);
-                if (param_2 == 0)
-                {
-                    param_2 = 0;
-                }
-                else
-                {
-                    IsTheAnswerHook(1);
-                }
-            }
-            return param_2;
-        }
-        private long TheJourneySetup(SetupInfo* info)
-        {
-            int fileSetupIndex = IndexSetup(&info->File, 0);
-            int iVar2;
-            int uVar3;
-            ulong itemTblJourney = _setJourneyItemTblReadPtrHook;
-            ulong btlTableJourney = _setJourneyBtlTableReloadPtrHook;
-            ulong readDataJourney = _setJourneyReadStartupDataPtrHook;
-            ulong dummyPtr = 0;
-            List<ulong> FileSetupPtrJourney = new List<ulong> { itemTblJourney, btlTableJourney, readDataJourney, dummyPtr };
-            FileSetupPtrJourney[0] = itemTblJourney;
-            FileSetupPtrJourney[1] = btlTableJourney;
-            FileSetupPtrJourney[2] = readDataJourney;
-            FileSetupPtrJourney[3] = dummyPtr;
-            _fileSetupIndex = &info->File;
-            if (*_fileSetupIndex = 1)
-            {
-                uVar3 = _setStatHook(_fileSetupIndex[2]);
-                if (uVar3 == 3)
-                {
-                    _fileSetupIndex[1] = _fileSetupIndex[1] + 1;
-                    *_fileSetupIndex = 0;
-                }
-            }
-            else if (*_fileSetupIndex = 0)
-            {
-                if (FileSetupPtrJourney[_fileSetupIndex[1]] = 0)
-                {
-                    return -1;
-                }
-                iVar2 = (FileSetupPtrJourney[_fileSetupIndex[1]]);
-                _fileSetupIndex[2] = iVar2;
-                *_fileSetupIndex = *_fileSetupIndex + 1;
-            }
-            return 0;
-        }
-        public long TheAnswerSetup(int param_1)
-        {
-            int* fileSetupIndex;
-            int iVar2;
-            int uVar3;
-            param_1SetupAnswer = param_1;
-            ulong itemTblAnswer = _setJourneyItemTblReadPtrHook; //placeholder will change later
-            ulong btlTableAnswer = _setAnswerBtlTableReloadPtrHook;
-            ulong readDataAnswer = _setAnswerReadStartupDataPtrHook;
-            ulong dummyPtr = 0;
-            List<ulong> FileSetupPtrAnswer = new List<ulong> { itemTblAnswer, btlTableAnswer, readDataAnswer, dummyPtr };
+            work = (SetupWork*)honpenTask->workData;
 
-            fileSetupIndex = *(int**)(param_1SetupAnswer + 72);
-            FileSetupPtrAnswer[0] = itemTblAnswer;
-            FileSetupPtrAnswer[1] = btlTableAnswer;
-            FileSetupPtrAnswer[2] = readDataAnswer;
-            FileSetupPtrAnswer[3] = dummyPtr;
-            if (*fileSetupIndex == 1)
+            _honpenTask = honpenTask;
+            funcs[0] = sHonpenFuncs[0];
+            funcs[1] = sHonpenFuncs[1];
+            funcs[2] = sHonpenFuncs[2];
+            funcs[3] = sHonpenFuncs[3];
+            switch (work->state)
             {
-                uVar3 = _setStatHook(fileSetupIndex[2]);
-                if (uVar3 == 3)
-                {
-                    fileSetupIndex[1] = fileSetupIndex[1] + 1;
-                    *fileSetupIndex = 0;
-                }
-            }
-            else if (*fileSetupIndex == 0)
-            {
-                if ((int*)FileSetupPtrAnswer[fileSetupIndex[1]] == (int*)0)
-                {
-                    return -1;
-                }
-                iVar2 = (*(int*)FileSetupPtrAnswer[fileSetupIndex[1]]);
-                fileSetupIndex[2] = iVar2;
-                *fileSetupIndex = *fileSetupIndex + 1;
-            }
-            return 0;
-        }
-        public long FreeMemoryJourney(long param_1)
-        {
-            param_1FreeMemJourney = param_1;
+                case 0:
+                    if (funcs[work->funcIdx] == null)
+                    {
+                        return (void*)KWLNTASK_STOP;
+                    }
+                    work->currTask = funcs[work->funcIdx](_honpenTask);
+                    work->state++;
+                    break;
 
-            _setFreeMemoryHook(*(long*)param_1FreeMemJourney + 72);
-            return 1;
-        }
-        public long FreeMemoryAnswer(long param_1)
-        {
-            param_1FreeMemAnswer = param_1;
-
-            _setFreeMemoryHook(*(long*)param_1FreeMemAnswer + 72);
-            return 1;
-        }
-        internal static int IndexSetup(SetupInfo* info, int file)
-        {
-            for (int i = 0; i < 3; i++)
-            {
-                if ((&info->File)[i].SetupIndex == file)
-                    return i;
+                case 1:
+                    {
+                        if (_kwlnTaskGetStateHook(work->currTask) == KWLNTASK_STATE_DESTROY)
+                        {
+                            work->funcIdx++;
+                            work->state = 0;
+                        }
+                        break;
+                    }
             }
-            return -1;
+            return (void*)KWLNTASK_CONTINUE;
+        }
+        private void* TheAnswerSetup(KwlnTaskk* gojitudanTask)
+        {
+            SetupWork* work;
+            HFileSetupFuncGojitudan[] funcs = new HFileSetupFuncGojitudan[4];
+
+            work = (SetupWork*)gojitudanTask->workData;
+
+            _gojitudanTask = gojitudanTask;
+            funcs[0] = sGojitudanFuncs[0];
+            funcs[1] = sGojitudanFuncs[1];
+            funcs[2] = sGojitudanFuncs[2];
+            funcs[3] = sGojitudanFuncs[3];
+            switch (work->state)
+            {
+                case 0:
+                    if (funcs[work->funcIdx] == null)
+                    {
+                        return (void*)KWLNTASK_STOP;
+                    }
+                    work->currTask = funcs[work->funcIdx](_gojitudanTask);
+                    work->state++;
+                    break;
+
+                case 1:
+                    {
+                        if (_kwlnTaskGetStateHook(work->currTask) == KWLNTASK_STATE_DESTROY)
+                        {
+                            work->funcIdx++;
+                            work->state = 0;
+                        }
+                        break;
+                    }
+            }
+            return (void*)KWLNTASK_CONTINUE;
+        }
+        internal void* DestroyHonpenTask(KwlnTaskk* honpenTask)
+        {
+            _setFreeMemoryHook(honpenTask->workData);
+            return honpenTask;
+        }
+        internal void* DestroyGojitudanTask(KwlnTaskk* gojitudanTask)
+        {
+            _setFreeMemoryHook(gojitudanTask->workData);
+            return gojitudanTask;
+        }
+        internal static KwlnTaskk* CreateGojitudanItemTblTask(KwlnTaskk* parent)
+        {
+            ItemTblWork* work;
+            KwlnTaskk* task;
+            void* updateGojitudanItemTbl = UpdateGojitudanItemTblTask(_gojitudanItemTblTask);
+            void* destroyGojitudanItemTbl = DestroyGojitudanItemTblTask(_gojitudanItemTblTask);
+
+            work = (ItemTblWork*)_rwCallocHook(1, sizeof(ItemTblWork), 0x40000);
+            if (work == null)
+            {
+                return null;
+            }
+            task = _kwlnTaskCreateWithAutoPriorityHook(null, "GojitudanItemTblDataRead", 15, 0, 0, updateGojitudanItemTbl, destroyGojitudanItemTbl, work);
+            if (task == null)
+            {
+                return null;
+            }
+            return task;
+        }
+        internal static void* UpdateGojitudanItemTblTask(KwlnTaskk* itemTblReadTask)
+        {
+            ItemTblWork* work;
+
+            work = (ItemTblWork*)itemTblReadTask->workData;
+
+            switch(work->state)
+            {
+                case 0:
+                    work->tblFile = _loadFileHook("init/AEGIS_itemtbl.bin", 0);
+                    //work->seqFile = _loadFileHook("init/AEGIS_seq.bin", 0);
+                    work->state++;
+                    break;
+                case 1:
+                    if (*(bool*)_isFileLoadedHook(work->tblFile) == true) //&& *(bool*)_isFileLoadedHook(work->seqFile) == true)
+                    {
+                        _destroyDataHook(work->tblFile);
+                        work->tblFile = null;
+
+                        //_destroyDataHook(work->seqFile);
+                        //work->seqFile = null;
+
+                        _itemTblDataHook();
+                        return (void*)KWLNTASK_STOP;
+                    }
+                    break;
+            }
+            return (void*)KWLNTASK_CONTINUE;
+        }
+        internal static void* DestroyGojitudanItemTblTask(KwlnTaskk* itemTblReadTask)
+        {
+            ItemTblWork* work;
+
+            work = (ItemTblWork*)itemTblReadTask->workData;
+
+            if (work->tblFile != null)
+            {
+                _destroyDataHook(work->tblFile);
+                work->tblFile = null;
+            }
+
+            if (work->seqFile != null)
+            {
+                _destroyDataHook(work->seqFile);
+                work->seqFile = null;
+            }
+            _setFreeMemoryHook(work);
+            return (void*)KWLNTASK_CONTINUE;
         }
     }
 }

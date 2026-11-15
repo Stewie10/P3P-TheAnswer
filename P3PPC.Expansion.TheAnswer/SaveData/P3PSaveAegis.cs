@@ -2,7 +2,7 @@
 using Reloaded.Hooks.Definitions.Enums;
 using Reloaded.Hooks.Definitions.X64;
 using Reloaded.Memory.SigScan.ReloadedII.Interfaces;
-using Reloaded.Memory.Sources;
+using Reloaded.Memory;
 using Reloaded.Mod.Interfaces;
 using System;
 using System.Text;
@@ -15,7 +15,7 @@ namespace P3PPC.Expansion.TheAnswer.SaveData
 {
     public class P3PSaveDataAegis
     {
-        private IMemory _memory;
+        private Memory _memory;
         private IAsmHook _isTheAnswerSetHook;
         private IReverseWrapper<IsTheAnswerSetDelegate> _isTheAnswerSetReverseWrapper;
         private IReverseWrapper<SaveDataJourneySetDelegate> _saveDataJourneyReverseWrapper;
@@ -23,7 +23,7 @@ namespace P3PPC.Expansion.TheAnswer.SaveData
         private IReverseWrapper<SaveDataSlotJourneySetDelegate> _saveDataSlotJourneyReverseWrapper;
         private IReverseWrapper<SaveDataSlotAnswerSetDelegate> _saveDataSlotAnswerReverseWrapper;
 
-        public void Hook(IReloadedHooks hooks, IMemory memory)
+        public void Hook(IReloadedHooks hooks)
         {
             _memory = Memory.Instance;
 
@@ -36,11 +36,11 @@ namespace P3PPC.Expansion.TheAnswer.SaveData
                     "cmp eax, 0",
                     "je AegisSave",
                     "mov r8d, esi",
-                    $"{hooks.Utilities.GetAbsoluteCallMnemonics(saveDataJourney, out _saveDataJourneyReverseWrapper)}",
+                    $"{hooks.Utilities.GetAbsoluteCallMnemonics(SaveDataJourney, out _saveDataJourneyReverseWrapper)}",
                     $"{hooks.Utilities.GetAbsoluteJumpMnemonics(address + 10, true)}",
                     "label AegisSave",
                     "mov r8d, esi",
-                    $"{hooks.Utilities.GetAbsoluteCallMnemonics(saveDataAnswer, out _saveDataAnswerReverseWrapper)}",
+                    $"{hooks.Utilities.GetAbsoluteCallMnemonics(SaveDataAnswer, out _saveDataAnswerReverseWrapper)}",
                     $"{hooks.Utilities.GetAbsoluteJumpMnemonics(address + 10, true)}"
 
                 };
@@ -57,11 +57,11 @@ namespace P3PPC.Expansion.TheAnswer.SaveData
                     "cmp eax, 0",
                     "je AegisSave",
                     "mov r8d, esi",
-                    $"{hooks.Utilities.GetAbsoluteCallMnemonics(saveDataSlotJourney, out _saveDataSlotJourneyReverseWrapper)}",
+                    $"{hooks.Utilities.GetAbsoluteCallMnemonics(SaveDataSlotJourney, out _saveDataSlotJourneyReverseWrapper)}",
                     $"{hooks.Utilities.GetAbsoluteJumpMnemonics(address + 10, true)}",
                     "label AegisSave",
                     "mov r8d, esi",
-                    $"{hooks.Utilities.GetAbsoluteCallMnemonics(saveDataSlotAnswer, out _saveDataSlotAnswerReverseWrapper)}",
+                    $"{hooks.Utilities.GetAbsoluteCallMnemonics(SaveDataSlotAnswer, out _saveDataSlotAnswerReverseWrapper)}",
                     $"{hooks.Utilities.GetAbsoluteJumpMnemonics(address + 10, true)}"
 
                 };
@@ -69,29 +69,29 @@ namespace P3PPC.Expansion.TheAnswer.SaveData
                 _isTheAnswerSetHook = hooks.CreateAsmHook(asm, address, AsmHookBehaviour.ExecuteAfter).Activate();
             });*/
         }
-        private void saveDataJourney(nuint stringBuffer, uint saveFile)
+        private void SaveDataJourney(nuint stringBuffer, uint saveFile)
         {
             string saveIDFormatted = saveFile.ToString("D4");
 
-            _memory.Write(stringBuffer, Encoding.ASCII.GetBytes($"P3PSAVE{saveIDFormatted}.BIN"));
+            _memory.Write(stringBuffer, Encoding.ASCII.GetBytes($"P3PSAVE{saveIDFormatted}.BIN").Length);
         }
-        private void saveDataAnswer(nuint stringBuffer, uint saveFile)
+        private void SaveDataAnswer(nuint stringBuffer, uint saveFile)
         {
             string saveIDFormatted = saveFile.ToString("D4");
 
-            _memory.Write(stringBuffer, Encoding.ASCII.GetBytes($"P3PSAVE{saveIDFormatted}_AEGIS.BIN"));
+            _memory.Write(stringBuffer, Encoding.ASCII.GetBytes($"P3PSAVE{saveIDFormatted}_AEGIS.BIN").Length);
         }
-        private void saveDataSlotJourney(nuint stringBuffer, uint saveFile)
+        private void SaveDataSlotJourney(nuint stringBuffer, uint saveFile)
         {
             string saveIDFormatted = saveFile.ToString("D4");
 
-            _memory.Write(stringBuffer, Encoding.ASCII.GetBytes($"P3PSAVE{saveIDFormatted}.BINslot"));
+            _memory.Write(stringBuffer, Encoding.ASCII.GetBytes($"P3PSAVE{saveIDFormatted}.BINslot").Length);
         }
-        private void saveDataSlotAnswer(nuint stringBuffer, uint saveFile)
+        private void SaveDataSlotAnswer(nuint stringBuffer, uint saveFile)
         {
             string saveIDFormatted = saveFile.ToString("D4");
 
-            _memory.Write(stringBuffer, Encoding.ASCII.GetBytes($"P3PSAVE{saveIDFormatted}_AEGIS.BINslot"));
+            _memory.Write(stringBuffer, Encoding.ASCII.GetBytes($"P3PSAVE{saveIDFormatted}_AEGIS.BINslot").Length);
         }
 
         [Function(new Register[] { Register.rax }, Register.rax, true)]

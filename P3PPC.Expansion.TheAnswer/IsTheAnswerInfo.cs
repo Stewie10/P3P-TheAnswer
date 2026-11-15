@@ -4,29 +4,23 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading.Tasks;
+using static P3PPC.Expansion.TheAnswer.KwlnTask.KwlnTaskP3P;
 
 namespace P3PPC.Expansion.TheAnswer
 {
-    internal unsafe class IsTheAnswerSetup
+    internal unsafe class HFileSetupWork
     {
         [StructLayout(LayoutKind.Explicit)]
-        internal struct SetupInfo
+        internal struct SetupWork
         {
             [FieldOffset(0)]
-            internal GetFiles File;
-        }
+            internal int state;
 
-        [StructLayout(LayoutKind.Explicit)]
-        internal struct GetFiles
-        {
-            [FieldOffset(72)]
-            internal int SetupIndex;
-        }
+            [FieldOffset(4)]
+            internal uint funcIdx;
 
-        [StructLayout(LayoutKind.Sequential)]
-        internal struct LoadSetupFiles
-        {
-            internal int Index;
+            [FieldOffset(8)]
+            internal KwlnTaskk* currTask;
         }
     }
 }

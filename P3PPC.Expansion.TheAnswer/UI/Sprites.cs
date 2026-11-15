@@ -10,10 +10,10 @@ namespace P3PPC.Expansion.TheAnswer.UI
     {
         internal enum JourneyAnswerSprite
         {
-            TheJourney = 0,
-            TheAnswer = 1,
-            CursorL = 2,
-            CursorR = 3,
+            TheJourney = 3,
+            TheAnswer = 4,
+            CursorL = 9,
+            CursorR = 10,
         }
     }
 }
