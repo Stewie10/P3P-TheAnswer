@@ -18,42 +18,41 @@ namespace P3PPC.Expansion.TheAnswer.UI
         private Memory _memory;
         private IAsmHook _isTheAnswerSetHook;
         private IReverseWrapper<IsTheAnswerSetDelegate> _isTheAnswerSetReverseWrapper;
-        private IReverseWrapper<SaveUIJourneySetDelegate> _saveUIJourneyReverseWrapper;
-        private IReverseWrapper<SaveUIAnswerSetDelegate> _saveUIAnswerReverseWrapper;
 
-        [Function(CallingConventions.Microsoft)]
+        [Function(new Register[] { Register.rax }, Register.rax, true)]
         private delegate Scenario IsTheAnswerSetDelegate();
-
-        [Function(new Register[] { Register.rdx }, Register.rdx, true)]
-        private delegate void SaveUIJourneySetDelegate(nuint stringBuffer, string saveFile);
-
-        [Function(new Register[] { Register.rdx }, Register.rdx, true)]
-        private delegate void SaveUIAnswerSetDelegate(nuint stringBuffer, string saveFile);
-        private void SaveUIJourney(nuint stringBuffer, string saveUI)
-        {
-            _memory.Write(stringBuffer, Encoding.ASCII.GetByteCount($"memcard/save.bin"));
-        }
-        private void SaveUIAnswer(nuint stringBuffer, string saveUI)
-        {
-            _memory.Write(stringBuffer, Encoding.ASCII.GetByteCount($"memcard/AGS_save.bin"));
-        }
 
         internal void Hook(IReloadedHooks hooks)
         {
             _memory = Memory.Instance;
+            string saveBin = "memcard/save.bin";
+            var saveBinPtr = (char**)_memory.Allocate((nuint)(sizeof(nuint) * saveBin.Length)).Address;
+            var stringBytes = Encoding.ASCII.GetBytes(saveBin);
+            var stringAddress = _memory.Allocate((nuint)stringBytes.Length).Address;
+            _memory.WriteRaw(stringAddress, stringBytes);
+            saveBinPtr = (char**)stringAddress;
+
+            string saveBinAGS = "memcard/AGS_save.bin";
+            var saveBinAGSPtr = (char**)_memory.Allocate((nuint)(sizeof(nuint) * saveBinAGS.Length)).Address;
+            var stringBytesAGS = Encoding.ASCII.GetBytes(saveBinAGS);
+            var stringAddressAGS = _memory.Allocate((nuint)stringBytesAGS.Length).Address;
+            _memory.WriteRaw(stringAddressAGS, stringBytesAGS);
+            saveBinAGSPtr = (char**)stringAddressAGS;
 
             Utils.SigScan("48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? FF 87 ?? ?? ?? ?? 48 89 87 ?? ?? ?? ?? E9 ?? ?? ?? ?? BA 03 00 00 00", "SaveUIAegis", address =>
             {
+                nuint saveBinPtrOff = (nuint)saveBinPtr;
+                nuint saveBinAGSPtrOff = (nuint)saveBinAGSPtr;
                 string[] asm =
                 {
                     "use64",
                     $"{hooks.Utilities.GetAbsoluteCallMnemonics(IsTheAnswerSet, out _isTheAnswerSetReverseWrapper)}",
                     "cmp eax, 0",
                     "jne AegisSave",
-                    $"{hooks.Utilities.GetAbsoluteCallMnemonics(SaveUIJourney, out _saveUIJourneyReverseWrapper)}",
+                    $"lea rcx, [qword {saveBinPtrOff}]",
                     $"{hooks.Utilities.GetAbsoluteJumpMnemonics(address + 7, true)}",
                     "label AegisSave",
-                    $"{hooks.Utilities.GetAbsoluteCallMnemonics(SaveUIAnswer, out _saveUIAnswerReverseWrapper)}"
+                    $"lea rcx, [qword {saveBinAGSPtrOff}]"
 
                 };
 
@@ -62,16 +61,18 @@ namespace P3PPC.Expansion.TheAnswer.UI
 
             Utils.SigScan("48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 48 89 43 10 48 8B 4B 10 E8 ?? ?? ?? ?? 85 C0", "SaveUIAegisLoadData", address =>
             {
+                nuint saveBinPtrOff = (nuint)saveBinPtr;
+                nuint saveBinAGSPtrOff = (nuint)saveBinAGSPtr;
                 string[] asm =
                 {
                     "use64",
                     $"{hooks.Utilities.GetAbsoluteCallMnemonics(IsTheAnswerSet, out _isTheAnswerSetReverseWrapper)}",
                     "cmp eax, 0",
                     "jne AegisSave",
-                    $"{hooks.Utilities.GetAbsoluteCallMnemonics(SaveUIJourney, out _saveUIJourneyReverseWrapper)}",
+                    $"lea rcx, [qword {saveBinPtrOff}]",
                     $"{hooks.Utilities.GetAbsoluteJumpMnemonics(address + 7, true)}",
                     "label AegisSave",
-                    $"{hooks.Utilities.GetAbsoluteCallMnemonics(SaveUIAnswer, out _saveUIAnswerReverseWrapper)}"
+                    $"lea rcx, [qword {saveBinAGSPtrOff}]"
 
                 };
 

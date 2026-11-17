@@ -228,9 +228,9 @@ namespace P3PPC.Expansion.TheAnswer
             SetupWork* work;
             HFileSetupFuncHonpen[] funcs = new HFileSetupFuncHonpen[4];
 
-            work = (SetupWork*)honpenTask->workData;
-
             _honpenTask = honpenTask;
+            work = (SetupWork*)_honpenTask->workData;
+
             funcs[0] = sHonpenFuncs[0];
             funcs[1] = sHonpenFuncs[1];
             funcs[2] = sHonpenFuncs[2];

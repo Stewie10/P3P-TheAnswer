@@ -256,7 +256,8 @@ namespace P3PPC.Expansion.TheAnswer.Title
         private float* titleValue1;
         private float* titleValue2;
 
-        private string sSprFiles;
+        private int* sprCount;
+        private Dictionary<nuint, int> sSprFileInfo = new();
 
         internal void Hook(IReloadedHooks hooks, IStartupScanner startupScanner)
         {
@@ -380,15 +381,34 @@ namespace P3PPC.Expansion.TheAnswer.Title
                 "title/face.spr", "title/menu.spr", "title/moon.spr", "title/p3p_logo.spr", "title/tartaros.spr",
                 "title/title_chara01.spr", "title/title_chara99.spr", "title/journeyanswer.spr"
             };
-            uint sprsCount = (uint)sSprFiles.Length;
 
             var sSprFilesPtr = (char**)_memory.Allocate((nuint)(sizeof(nuint) * sSprFiles.Length)).Address;
-            for (int i = 0; i < sprsCount; i++)
+            for (int i = 0; i < sSprFiles.Length; i++)
             {
                 var stringBytes = Encoding.ASCII.GetBytes(sSprFiles[i]);
                 var stringAddress = _memory.Allocate((nuint)stringBytes.Length).Address;
                 _memory.WriteRaw(stringAddress, stringBytes);
                 sSprFilesPtr[i] = (char*)stringAddress;
+            }
+
+            nuint sSprFilesPtrOff = (nuint)sSprFilesPtr;
+
+            sprCount = (int*)_memory.Allocate((sizeof(int))).Address;
+            *sprCount = 8;
+
+            var sSprFileInfo = new[]
+            {
+                sSprFilesPtr
+            };
+
+            var sSprFileInfoPtr = (nuint*)_memory.Allocate((nuint)sizeof(nuint)).Address;
+            for (int i = 0; i < sSprFileInfo.Length; i++)
+            {
+                var stringOff = sSprFileInfo[i];
+                var countAddress = _memory.Allocate((nuint)stringOff).Address;
+                _memory.Write(countAddress, (int)stringOff);
+                sSprFileInfoPtr[i] = (nuint)stringOff;
+                *(int*)(sSprFileInfo[i] + 8) = 8;
             }
 
             Utils.SigScan("48 83 EC 28 48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 48 83 C4 28 E9 F7 4F 03 00", "GetTitleMenu", address =>
@@ -556,14 +576,16 @@ namespace P3PPC.Expansion.TheAnswer.Title
                 _loadSprFileHook = hooks.CreateWrapper<LoadSprFileDelegate>(address, out _);
             });
 
-            Utils.SigScan("8B 8C 82 ?? ?? ?? ?? 48 03 CA FF E1 C7 45 ?? ?? ?? ?? ??", "jumpTitleScreenAnim", address =>
+            Utils.SigScan("0F B6 84 02 ?? ?? ?? ?? 8B 8C 82 ?? ?? ?? ?? 48 03 CA FF E1 C7 45 ?? ?? ?? ?? ??", "jumpTitleScreenAnim", address =>
             {
                 string[] function =
                 {
                     "use64",
-                    "mov ecx, [rdx + rax * 4 + 0x00826F20]"
+                    "movzx eax, byte [rdx + rax + 0x00826ED0]",
+                    "mov ecx, [rdx + rax * 4 + 0x00826F20]",
+                    $"{hooks.Utilities.GetAbsoluteJumpMnemonics(address + 15, true)}"
                 };
-                _jumpTitleScreenAnimHook = hooks.CreateAsmHook(function, address, AsmHookBehaviour.ExecuteAfter).Activate();
+                _jumpTitleScreenAnimHook = hooks.CreateAsmHook(function, address, AsmHookBehaviour.DoNotExecuteOriginal).Activate();
             });
 
             Utils.SigScan("41 B8 ?? ?? ?? ?? 48 8D 0D ?? ?? ?? ?? 8B D7 48 8B 34 C1 48 8D 4E 28 E8 ?? ?? ?? ?? 48 8B D8 48 85 C0 74 3F E8 ?? ?? ?? ?? 0F BA F0 1F", "JourneyAnswerTitleAnim", address =>
@@ -1769,11 +1791,11 @@ namespace P3PPC.Expansion.TheAnswer.Title
 
             Utils.SigScan("48 8D 0D ?? ?? ?? ?? C7 03 ?? ?? ?? ?? E8 ?? ?? ?? ?? 48 89 43 58 E9 ?? ?? ?? ?? 48 8B 4B 58", "NewSprList", address =>
             {
-                nuint sSprFilesPtrOff = (nuint)sSprFilesPtr;
+                nuint sSprFileInfoPtrOff = (nuint)sSprFileInfoPtr;
                 string[] function =
                 {
                     "use64",
-                    $"lea rcx, [qword {sSprFilesPtrOff}]"
+                    $"lea rcx, [qword {sSprFileInfoPtrOff}]"
                 };
                 _newSprListHook = hooks.CreateAsmHook(function, address, AsmHookBehaviour.ExecuteAfter).Activate();
             });
@@ -1787,7 +1809,7 @@ namespace P3PPC.Expansion.TheAnswer.Title
                     "mov [rbx + 8], edi",
                     $"{hooks.Utilities.GetAbsoluteJumpMnemonics(address + 36, true)}"
                 };
-                _case29ToCase30Hook = hooks.CreateAsmHook(function, address, AsmHookBehaviour.ExecuteFirst).Activate();
+                _case29ToCase30Hook = hooks.CreateAsmHook(function, address, AsmHookBehaviour.DoNotExecuteOriginal).Activate();
             });
 
             Utils.SigScan("0F B6 84 24 ?? ?? ?? ?? F3 0F 58 F6 0F B6 94 24 ?? ?? ?? ?? F3 0F 58 FF C1 E2 08 0B D0 F3 44 0F 11 43 ?? 0F B6 84 24 ?? ?? ?? ??", "Case30PressButton", address => //140125D2F
@@ -1804,7 +1826,7 @@ namespace P3PPC.Expansion.TheAnswer.Title
                     "movss dword [rbx + 8], xmm0",
                     "jb skipFadeOut",
                     "mov edx, 0x14",
-                    "mov dword [rbx], 0x1C",
+                    "mov dword [rbx], 0x1B",
                     "mov ecx, esi",
                     "mov [rbx + 0x24], esi",
                     $"{hooks.Utilities.GetAbsoluteCallMnemonics(_fadeOutHook, out _fadeOutReverseWrapper)}",
@@ -1821,7 +1843,7 @@ namespace P3PPC.Expansion.TheAnswer.Title
                     "label titleScreenAnim",
                     $"{hooks.Utilities.GetAbsoluteJumpMnemonics(address + 1205686, true)}"
                 };
-                _case30PressButtonHook = hooks.CreateAsmHook(function, address, AsmHookBehaviour.ExecuteFirst).Activate();
+                _case30PressButtonHook = hooks.CreateAsmHook(function, address, AsmHookBehaviour.DoNotExecuteOriginal).Activate();
             });
 
             Utils.SigScan("0F B6 84 24 ?? ?? ?? ?? 44 0F 28 44 24 ?? C1 E2 08 0B D0 F3 0F 11 73 ?? 0F B6 84 24 ?? ?? ?? ?? 0F 28 74 24 ?? C1 E2 08 0B D0", "Case31LoadToMenu", address => //140125D52
@@ -1839,7 +1861,7 @@ namespace P3PPC.Expansion.TheAnswer.Title
                     "mov dword [rsp + 0x28], 2",
                     "xorps xmm2, xmm2",
                     "movups [rsp + 0x38], xmm0",
-                    "mov dword [rbx], 0x14",
+                    "mov dword [rbx], 0x20",
                     "mov [rbx + 8], edi",
                     "mov word [rsp + 0x20], si",
                     $"{hooks.Utilities.GetAbsoluteCallMnemonics(_touchListHook, out _touchListReverseWrapper)}",
@@ -1847,10 +1869,10 @@ namespace P3PPC.Expansion.TheAnswer.Title
                     $"{hooks.Utilities.GetAbsoluteCallMnemonics(_unkMemoryHook, out _unkMemoryReverseWrapper)}",
                     $"{hooks.Utilities.GetAbsoluteJumpMnemonics(address + 14, true)}"
                 };
-                _case31LoadToMenuHook = hooks.CreateAsmHook(function, address, AsmHookBehaviour.ExecuteFirst).Activate();
+                _case31LoadToMenuHook = hooks.CreateAsmHook(function, address, AsmHookBehaviour.DoNotExecuteOriginal).Activate();
             });
 
-            Utils.SigScan("C1 E2 08 0B D0 F3 0F 11 73 ?? 0F B6 84 24 ?? ?? ?? ?? 0F 28 74 24 ?? C1 E2 08", "Case32InMenu", address => //140125D60
+            Utils.SigScan("C1 E2 08 0B D0 F3 0F 11 73 ?? 0F B6 84 24 ?? ?? ?? ?? 0F 28 74 24 ?? C1 E2 08 0B D0 F3 0F 11 7B ?? 0F BF 84 24 ?? ?? ?? ?? 0F 28 7C 24 ?? 89 53 08 66 0F 6E C0 0F BF 84 24 ?? ?? ?? ?? 0F 5B C0 66 0F 6E C8 0F 5B C9", "Case32InMenu", address => //140125D60
             {
                 nuint valueAddress = (nuint)value;
                 nuint lessThanValueAddress = (nuint)lessThanValue;
@@ -1991,20 +2013,20 @@ namespace P3PPC.Expansion.TheAnswer.Title
                     "mov [rbx + 0x1C], edi",
                     "jmp titleScreenAnim"
                 };
-                _case32InMenuHook = hooks.CreateAsmHook(function, address, AsmHookBehaviour.ExecuteAfter).Activate();
+                _case32InMenuHook = hooks.CreateAsmHook(function, address, AsmHookBehaviour.DoNotExecuteOriginal).Activate();
             });
 
-            Utils.SigScan("0F B6 84 24 ?? ?? ?? ?? 0F 28 74 24 ?? C1 E2 08 0B D0 F3 0F 11 7B ??", "Case33TheJourney", address => //140125D6A
+            Utils.SigScan("0F B6 84 24 ?? ?? ?? ?? 0F 28 74 24 ?? C1 E2 08 0B D0 F3 0F 11 7B ?? 0F BF 84 24 ?? ?? ?? ?? 0F 28 7C 24 ?? 89 53 08 66 0F 6E C0 0F BF 84 24 ?? ?? ?? ?? 0F 5B C0 66 0F 6E C8 0F 5B C9 F3 0F 11 03 F3 0F 11 4B ?? 48 83 C4 50", "Case33TheJourney", address => //140125D6A
             {
                 string[] function =
                 {
                     "use64",
-                    "mov dword [rbx], 6",
+                    "mov dword [rbx], 8",
                     $"{hooks.Utilities.GetAbsoluteCallMnemonics(_fileSetup.TheJourney, out _fileSetup._theJourneyReverseWrapper)}",
                     "mov [rbx + 0x48], rax",
                     $"{hooks.Utilities.GetAbsoluteJumpMnemonics(address + 1204468, true)}"
                 };
-                _case33TheJourneyHook = hooks.CreateAsmHook(function, address, AsmHookBehaviour.ExecuteFirst).Activate();
+                _case33TheJourneyHook = hooks.CreateAsmHook(function, address, AsmHookBehaviour.DoNotExecuteOriginal).Activate();
             });
 
             Utils.SigScan("0F BF 84 24 ?? ?? ?? ?? 0F 28 7C 24 ?? 89 53 08 66 0F 6E C0 0F BF 84 24 ?? ?? ?? ?? 0F 5B C0 66 0F 6E C8", "Case34TheAnswer", address => //140125D81
@@ -2012,12 +2034,12 @@ namespace P3PPC.Expansion.TheAnswer.Title
                 string[] function =
                 {
                     "use64",
-                    "mov dword [rbx], 6",
+                    "mov dword [rbx], 8",
                     $"{hooks.Utilities.GetAbsoluteCallMnemonics(_fileSetup.TheAnswer, out _fileSetup._theAnswerReverseWrapper)}",
                     "mov [rbx + 0x48], rax",
                     $"{hooks.Utilities.GetAbsoluteJumpMnemonics(address + 1204445, true)}"
                 };
-                _case34TheAnswerHook = hooks.CreateAsmHook(function, address, AsmHookBehaviour.ExecuteFirst).Activate();
+                _case34TheAnswerHook = hooks.CreateAsmHook(function, address, AsmHookBehaviour.DoNotExecuteOriginal).Activate();
             });
         }
     }
