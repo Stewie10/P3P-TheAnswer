@@ -16,11 +16,14 @@ namespace P3PPC.Expansion.TheAnswer.TblFiles
             [FieldOffset(0)]
             internal uint state;
 
-            [FieldOffset(4)]
+            [FieldOffset(8)]
             internal FileData* tblFile;
 
-            [FieldOffset(12)]
+            [FieldOffset(16)]
             internal FileData* seqFile;
+
+            [FieldOffset(24)]
+            internal void* fileMemory;
         }
     }
 }

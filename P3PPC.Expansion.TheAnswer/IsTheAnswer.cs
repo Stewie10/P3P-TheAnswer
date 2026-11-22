@@ -22,24 +22,29 @@ namespace P3PPC.Expansion.TheAnswer
 {
     public unsafe class IsTheAnswer
     {
-        [ThreadStatic]
-
         internal static RwCallocDelegate _rwCallocHook;
         internal static kwlnTaskCreateWithAutoPriorityDelegate _kwlnTaskCreateWithAutoPriorityHook;
         internal static FreeMemoryDelegate _setFreeMemoryHook;
         internal static kwlnTaskGetStateDelegate _kwlnTaskGetStateHook;
-        internal static LoadFileDelegate _loadFileHook;
-        internal static IsFileLoadedDelegate _isFileLoadedHook;
+        internal LoadFileDelegate _loadFileHook;
+        internal IsFileLoadedDelegate _isFileLoadedHook;
         internal static DestroyDataDelegate _destroyDataHook;
         internal static ItemTblDataDelegate _itemTblDataHook;
+        internal static UnkItemTblDestroyRelatedDelegate _unkItemTblDestroyRelatedHook;
         internal IReverseWrapper<TheJourneyDelegate> _theJourneyReverseWrapper;
         internal IReverseWrapper<TheAnswerDelegate> _theAnswerReverseWrapper;
+        internal IReverseWrapper<KwlnTaskUpdateDelegate> _journeyUpdateWrapper;
+        internal IReverseWrapper<KwlnTaskDestroyDelegate> _journeyDestroyWrapper;
+        internal IReverseWrapper<KwlnTaskUpdateDelegate> _answerUpdateWrapper;
+        internal IReverseWrapper<KwlnTaskDestroyDelegate> _answerDestroyWrapper;
+        internal static IReverseWrapper<KwlnTaskUpdateDelegate> _gojitudanItemTblUpdateWrapper;
+        internal static IReverseWrapper<KwlnTaskDestroyDelegate> _gojitudanItemTblDestroyWrapper;
 
         [Function(CallingConventions.Microsoft)]
-        internal delegate void* RwCallocDelegate(uint elemCount, int elemSize, uint hint);
+        internal delegate void* RwCallocDelegate(uint elemCount, int elemSize);
 
         [Function(CallingConventions.Microsoft)]
-        internal delegate KwlnTaskk* kwlnTaskCreateWithAutoPriorityDelegate(KwlnTaskk* parentTask, string taskName, int param_3, int param_4, int param_5, void* taskFunction, void* destroyTaskFunction, void* workData);
+        internal delegate KwlnTaskk* kwlnTaskCreateWithAutoPriorityDelegate(string taskName, int priority, int param_4, uint param_5, void* taskFunction, void* destroyTaskFunction, void* workData);
 
         [Function(CallingConventions.Microsoft)]
         internal delegate void FreeMemoryDelegate(void* ptr);
@@ -57,18 +62,25 @@ namespace P3PPC.Expansion.TheAnswer
         internal delegate FileData* LoadFileDelegate(string path, uint fileMode);
 
         [Function(CallingConventions.Microsoft)]
-        internal delegate uint IsFileLoadedDelegate(FileData* file);
+        internal delegate bool IsFileLoadedDelegate(FileData* file);
 
         [Function(CallingConventions.Microsoft)]
         internal delegate byte DestroyDataDelegate(FileData* file);
 
         [Function(CallingConventions.Microsoft)]
         internal delegate byte ItemTblDataDelegate();
+
+        [Function(CallingConventions.Microsoft)]
+        internal delegate void* KwlnTaskUpdateDelegate(KwlnTaskk* task);
+
+        [Function(CallingConventions.Microsoft)]
+        internal delegate void* KwlnTaskDestroyDelegate(KwlnTaskk* task);
+
+        [Function(CallingConventions.Microsoft)]
+        internal delegate long UnkItemTblDestroyRelatedDelegate(ItemTblWork* param_1, long param_2);
         private Memory _memory;
         internal static Scenario isTheAnswerFlag;
-        private static KwlnTaskk* _honpenTask;
-        private static KwlnTaskk* _gojitudanTask;
-        private static KwlnTaskk* _gojitudanItemTblTask;
+        internal static nint isTheAnswerFlagPtr;
         internal static HFileSetupFuncHonpen _setJourneyItemTblReadPtrHook;
         internal static HFileSetupFuncHonpen _setJourneyBtlTableReloadPtrHook;
         internal static HFileSetupFuncHonpen _setJourneyReadStartupDataPtrHook;
@@ -82,8 +94,7 @@ namespace P3PPC.Expansion.TheAnswer
         {
             _setJourneyItemTblReadPtrHook,
             _setJourneyBtlTableReloadPtrHook,
-            _setJourneyReadStartupDataPtrHook,
-            null
+            _setJourneyReadStartupDataPtrHook
         };
 
         [Function(CallingConventions.Microsoft)]
@@ -92,8 +103,7 @@ namespace P3PPC.Expansion.TheAnswer
         {
             _createGojitudanItemTblTask,
             _setAnswerBtlTableReloadPtrHook,
-            _setAnswerReadStartupDataPtrHook,
-            null
+            _setAnswerReadStartupDataPtrHook
         };
 
         internal static int KWLNTASK_STOP = -1;
@@ -108,13 +118,21 @@ namespace P3PPC.Expansion.TheAnswer
             _memory = Memory.Instance;
 
             isTheAnswerFlag = (Scenario)_memory.Allocate(4).Address;
+            isTheAnswerFlagPtr = hooks.Utilities.WritePointer((nint)isTheAnswerFlag);
 
-            Utils.SigScan("48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 57 48 83 EC 20 48 8B F1 41 8B F8 48 8D 0D ?? ?? ?? ?? 48 8B DA E8 ?? ?? ?? ?? E8 ?? ?? ?? ?? 48 0F AF F3 8B D7", "SetTaskToMemory", address =>
+            _journeyUpdateWrapper = hooks.CreateReverseWrapper<KwlnTaskUpdateDelegate>(TheJourneySetup);
+            _journeyDestroyWrapper = hooks.CreateReverseWrapper<KwlnTaskDestroyDelegate>(DestroyHonpenTask);
+            _answerUpdateWrapper = hooks.CreateReverseWrapper<KwlnTaskUpdateDelegate>(TheAnswerSetup);
+            _answerDestroyWrapper = hooks.CreateReverseWrapper<KwlnTaskDestroyDelegate>(DestroyGojitudanTask);
+            _gojitudanItemTblUpdateWrapper = hooks.CreateReverseWrapper<KwlnTaskUpdateDelegate>(UpdateGojitudanItemTblTask);
+            _gojitudanItemTblDestroyWrapper = hooks.CreateReverseWrapper<KwlnTaskDestroyDelegate>(DestroyGojitudanItemTblTask);
+
+            Utils.SigScan("48 89 5C 24 ?? 48 89 6C 24 ?? 48 89 74 24 ?? 57 48 83 EC 20 48 8B F1 41 8B F8 48 8D 0D ?? ?? ?? ?? 48 8B DA E8 ?? ?? ?? ?? E8 ?? ?? ?? ?? 48 0F AF F3", "SetTaskToMemory", address =>
             {
                 _rwCallocHook = hooks.CreateWrapper<RwCallocDelegate>(address, out _);
             });
 
-            Utils.SigScan("48 89 5C 24 ?? 48 89 6C 24 ?? 56 41 56 41 57 48 83 EC 20 48 89 CD 45 89 CE 48 8D 0D ?? ?? ?? ?? 45 89 C7 48 89 D6 E8 ?? ?? ?? ?? 80 3E 00 75 15 8B 15", "LoadTask", address =>
+            Utils.SigScan("48 89 5C 24 ?? 48 89 6C 24 ?? 56 57 41 56 48 83 EC 20 48 89 CF 44 89 CE 48 8D 0D ?? ?? ?? ?? 44 89 C5 41 89 D6 E8 ?? ?? ?? ?? 8A 0D ?? ?? ?? ?? 80 F1 48 38 0F 75 15 8B 15 ?? ?? ?? ?? 48 8D 0D ?? ?? ?? ?? 83 C2 04 E8 ?? ?? ?? ?? 48 8B 0D ?? ?? ?? ?? 31 D2", "LoadTask", address =>
             {
                 _kwlnTaskCreateWithAutoPriorityHook = hooks.CreateWrapper<kwlnTaskCreateWithAutoPriorityDelegate>(address, out _);
             });
@@ -154,12 +172,12 @@ namespace P3PPC.Expansion.TheAnswer
                 _kwlnTaskGetStateHook = hooks.CreateWrapper<kwlnTaskGetStateDelegate>(address, out _);
             });
 
-            Utils.SigScan("48 89 5C 24 ?? 55 56 57 41 56 41 57 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 31 E0 48 89 84 24 ?? ?? ?? ?? 48 89 CF 48 89 D3 48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 48 85 DB 4C 8D 74 24 ?? 4C 0F 45 F3 48 83 FF 01", "LoadFile", address =>
+            Utils.SigScan("48 89 6C 24 ?? 56 57 41 56 48 81 EC ?? ?? ?? ?? 48 8B 05 ?? ?? ?? ?? 48 31 E0 48 89 84 24 ?? ?? ?? ?? 48 89 CD 41 89 D6 48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? E8 ?? ?? ?? ?? 48 8D 54 24 ?? 48 89 E9", "LoadFile", address =>
             {
                 _loadFileHook = hooks.CreateWrapper<LoadFileDelegate>(address, out _);
             });
 
-            Utils.SigScan("40 53 48 83 EC 20 48 8B D9 48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 33 C0 83 7B 04 0C 0F 94 C0", "IsFileLoaded", address =>
+            Utils.SigScan("40 53 48 83 EC 20 48 8B D9 48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 33 C0 83 7B 04 0C 0F 94 C0 48 83 C4 20 5B C3", "IsFileLoaded", address =>
             {
                 _isFileLoadedHook = hooks.CreateWrapper<IsFileLoadedDelegate>(address, out _);
             });
@@ -173,29 +191,32 @@ namespace P3PPC.Expansion.TheAnswer
             {
                 _itemTblDataHook = hooks.CreateWrapper<ItemTblDataDelegate>(address, out _);
             });
+
+            Utils.SigScan("48 89 5C 24 ?? 57 48 83 EC 20 48 89 CF 89 D3 48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 41 89 D8 48 8D 0D ?? ?? ?? ?? 48 89 FA 48 8B 5C 24 ?? 48 83 C4 20 5F E9 ?? ?? ?? ??", "UnkItemTblDestoryRelated", address =>
+            {
+                _unkItemTblDestroyRelatedHook = hooks.CreateWrapper<UnkItemTblDestroyRelatedDelegate>(address, out _);
+            });
         }
         internal static void datSetScenarioMode(Scenario isEnabled)
         {
-            isTheAnswerFlag = isEnabled;
+            isTheAnswerFlagPtr = (nint)isEnabled;
             return;
         }
         internal static Scenario IsTheAnswerSet()
         {
-            return isTheAnswerFlag;
+            return (Scenario)isTheAnswerFlagPtr;
         }
         internal KwlnTaskk* TheJourney()
         {
             SetupWork* work;
             KwlnTaskk* task;
-            void* journeySetup = TheJourneySetup(_honpenTask);
-            void* journeyFreeMem = DestroyHonpenTask(_honpenTask);
 
-            work = (SetupWork*)_rwCallocHook(1, sizeof(SetupWork), 0x40000);
+            work = (SetupWork*)_rwCallocHook(1, sizeof(SetupWork));
             if (work == null)
             {
                 return null;
             }
-            task = _kwlnTaskCreateWithAutoPriorityHook(null, "HonpenFileSetup", 15, 0, 0, journeySetup, journeyFreeMem, work);
+            task = _kwlnTaskCreateWithAutoPriorityHook("HonpenFileSetup", 500, 0, 0, (void*)_journeyUpdateWrapper.WrapperPointer, (void*)_journeyDestroyWrapper.WrapperPointer, work);
             if (task == null)
             {
                 return null;
@@ -207,15 +228,13 @@ namespace P3PPC.Expansion.TheAnswer
         {
             SetupWork* work;
             KwlnTaskk* task;
-            void* answerSetup = TheAnswerSetup(_gojitudanTask);
-            void* answerFreeMem = DestroyGojitudanTask(_gojitudanTask);
 
-            work = (SetupWork*)_rwCallocHook(1, sizeof(SetupWork), 0x40000);
+            work = (SetupWork*)_rwCallocHook(1, sizeof(SetupWork));
             if (work == null)
             {
                 return null;
             }
-            task = _kwlnTaskCreateWithAutoPriorityHook(null, "GojitudanFileSetup", 15, 0, 0, answerSetup, answerFreeMem, work);
+            task = _kwlnTaskCreateWithAutoPriorityHook("GojitudanFileSetup", 501, 0, 0, (void*)_answerUpdateWrapper.WrapperPointer, (void*)_answerDestroyWrapper.WrapperPointer, work);
             if (task == null)
             {
                 return null;
@@ -228,13 +247,11 @@ namespace P3PPC.Expansion.TheAnswer
             SetupWork* work;
             HFileSetupFuncHonpen[] funcs = new HFileSetupFuncHonpen[4];
 
-            _honpenTask = honpenTask;
-            work = (SetupWork*)_honpenTask->workData;
+            work = (SetupWork*)honpenTask->workData;
 
             funcs[0] = sHonpenFuncs[0];
             funcs[1] = sHonpenFuncs[1];
-            funcs[2] = sHonpenFuncs[2];
-            funcs[3] = sHonpenFuncs[3];
+            //funcs[2] = sHonpenFuncs[2];
             switch (work->state)
             {
                 case 0:
@@ -242,7 +259,7 @@ namespace P3PPC.Expansion.TheAnswer
                     {
                         return (void*)KWLNTASK_STOP;
                     }
-                    work->currTask = funcs[work->funcIdx](_honpenTask);
+                    work->currTask = funcs[work->funcIdx](honpenTask);
                     work->state++;
                     break;
 
@@ -253,8 +270,8 @@ namespace P3PPC.Expansion.TheAnswer
                             work->funcIdx++;
                             work->state = 0;
                         }
-                        break;
                     }
+                    break;
             }
             return (void*)KWLNTASK_CONTINUE;
         }
@@ -265,11 +282,9 @@ namespace P3PPC.Expansion.TheAnswer
 
             work = (SetupWork*)gojitudanTask->workData;
 
-            _gojitudanTask = gojitudanTask;
             funcs[0] = sGojitudanFuncs[0];
             funcs[1] = sGojitudanFuncs[1];
-            funcs[2] = sGojitudanFuncs[2];
-            funcs[3] = sGojitudanFuncs[3];
+            //funcs[2] = sGojitudanFuncs[2];
             switch (work->state)
             {
                 case 0:
@@ -277,7 +292,7 @@ namespace P3PPC.Expansion.TheAnswer
                     {
                         return (void*)KWLNTASK_STOP;
                     }
-                    work->currTask = funcs[work->funcIdx](_gojitudanTask);
+                    work->currTask = funcs[work->funcIdx](gojitudanTask);
                     work->state++;
                     break;
 
@@ -288,61 +303,59 @@ namespace P3PPC.Expansion.TheAnswer
                             work->funcIdx++;
                             work->state = 0;
                         }
-                        break;
                     }
+                    break;
             }
             return (void*)KWLNTASK_CONTINUE;
         }
         internal void* DestroyHonpenTask(KwlnTaskk* honpenTask)
         {
             _setFreeMemoryHook(honpenTask->workData);
-            return honpenTask;
+            return (void*)-1;
         }
         internal void* DestroyGojitudanTask(KwlnTaskk* gojitudanTask)
         {
             _setFreeMemoryHook(gojitudanTask->workData);
-            return gojitudanTask;
+            return (void*)-1;
         }
         internal static KwlnTaskk* CreateGojitudanItemTblTask(KwlnTaskk* parent)
         {
             ItemTblWork* work;
             KwlnTaskk* task;
-            void* updateGojitudanItemTbl = UpdateGojitudanItemTblTask(_gojitudanItemTblTask);
-            void* destroyGojitudanItemTbl = DestroyGojitudanItemTblTask(_gojitudanItemTblTask);
 
-            work = (ItemTblWork*)_rwCallocHook(1, sizeof(ItemTblWork), 0x40000);
+            work = (ItemTblWork*)_rwCallocHook(1, sizeof(ItemTblWork));
             if (work == null)
             {
                 return null;
             }
-            task = _kwlnTaskCreateWithAutoPriorityHook(null, "GojitudanItemTblDataRead", 15, 0, 0, updateGojitudanItemTbl, destroyGojitudanItemTbl, work);
+            task = _kwlnTaskCreateWithAutoPriorityHook("GojitudanItemTblDataRead", 502, 0, 0, (void*)_gojitudanItemTblUpdateWrapper.WrapperPointer, (void*)_gojitudanItemTblDestroyWrapper.WrapperPointer, work);
             if (task == null)
             {
                 return null;
             }
             return task;
         }
-        internal static void* UpdateGojitudanItemTblTask(KwlnTaskk* itemTblReadTask)
+        internal void* UpdateGojitudanItemTblTask(KwlnTaskk* itemTblReadTask)
         {
             ItemTblWork* work;
 
             work = (ItemTblWork*)itemTblReadTask->workData;
 
-            switch(work->state)
+            switch (work->state)
             {
                 case 0:
                     work->tblFile = _loadFileHook("init/AEGIS_itemtbl.bin", 0);
-                    //work->seqFile = _loadFileHook("init/AEGIS_seq.bin", 0);
+                    work->seqFile = _loadFileHook("init/AEGIS_seq.bin", 0);
                     work->state++;
                     break;
                 case 1:
-                    if (*(bool*)_isFileLoadedHook(work->tblFile) == true) //&& *(bool*)_isFileLoadedHook(work->seqFile) == true)
+                    if (_isFileLoadedHook(work->tblFile) == true && _isFileLoadedHook(work->seqFile) == true)
                     {
                         _destroyDataHook(work->tblFile);
                         work->tblFile = null;
 
-                        //_destroyDataHook(work->seqFile);
-                        //work->seqFile = null;
+                        _destroyDataHook(work->seqFile);
+                        work->seqFile = null;
 
                         _itemTblDataHook();
                         return (void*)KWLNTASK_STOP;

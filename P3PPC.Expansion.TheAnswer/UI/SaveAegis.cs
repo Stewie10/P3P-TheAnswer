@@ -19,9 +19,6 @@ namespace P3PPC.Expansion.TheAnswer.UI
         private IAsmHook _isTheAnswerSetHook;
         private IReverseWrapper<IsTheAnswerSetDelegate> _isTheAnswerSetReverseWrapper;
 
-        [Function(new Register[] { Register.rax }, Register.rax, true)]
-        private delegate Scenario IsTheAnswerSetDelegate();
-
         internal void Hook(IReloadedHooks hooks)
         {
             _memory = Memory.Instance;
@@ -39,7 +36,7 @@ namespace P3PPC.Expansion.TheAnswer.UI
             _memory.WriteRaw(stringAddressAGS, stringBytesAGS);
             saveBinAGSPtr = (char**)stringAddressAGS;
 
-            Utils.SigScan("48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? FF 87 ?? ?? ?? ?? 48 89 87 ?? ?? ?? ?? E9 ?? ?? ?? ?? BA 03 00 00 00", "SaveUIAegis", address =>
+            Utils.SigScan("8B D6 48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? FF 87 ?? ?? ?? ?? 48 89 87 ?? ?? ?? ?? E9 ?? ?? ?? ?? BA 03 00 00 00", "SaveUIAegis", address =>
             {
                 nuint saveBinPtrOff = (nuint)saveBinPtr;
                 nuint saveBinAGSPtrOff = (nuint)saveBinAGSPtr;
@@ -47,19 +44,20 @@ namespace P3PPC.Expansion.TheAnswer.UI
                 {
                     "use64",
                     $"{hooks.Utilities.GetAbsoluteCallMnemonics(IsTheAnswerSet, out _isTheAnswerSetReverseWrapper)}",
-                    "cmp eax, 0",
-                    "jne AegisSave",
+                    $"cmp rax, {(int)Scenario.Answer}",
+                    "je AegisSave",
+                    "mov edx, esi",
                     $"lea rcx, [qword {saveBinPtrOff}]",
-                    $"{hooks.Utilities.GetAbsoluteJumpMnemonics(address + 7, true)}",
+                    $"{hooks.Utilities.GetAbsoluteJumpMnemonics(address + 9, true)}",
                     "label AegisSave",
-                    $"lea rcx, [qword {saveBinAGSPtrOff}]"
-
+                    "mov edx, esi",
+                    $"lea rcx, [qword {saveBinAGSPtrOff}]",
+                    $"{hooks.Utilities.GetAbsoluteJumpMnemonics(address + 9, true)}"
                 };
-
-                _isTheAnswerSetHook = hooks.CreateAsmHook(asm, address, AsmHookBehaviour.ExecuteFirst).Activate();
+                _isTheAnswerSetHook = hooks.CreateAsmHook(asm, address, AsmHookBehaviour.DoNotExecuteOriginal).Activate();
             });
 
-            Utils.SigScan("48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 48 89 43 10 48 8B 4B 10 E8 ?? ?? ?? ?? 85 C0", "SaveUIAegisLoadData", address =>
+            Utils.SigScan("BA ?? ?? ?? ?? C7 03 ?? ?? ?? ?? 48 8D 0D ?? ?? ?? ?? E8 ?? ?? ?? ?? 48 89 43 10 48 8B 4B 10 E8 ?? ?? ?? ?? 85 C0 0F 84 ?? ?? ?? ?? 48 8D 54 24 ?? 48 89 74 24 ?? 48 8D 0D ?? ?? ?? ?? C7 03 03 00 00 00", "SaveUIAegisLoadData", address =>
             {
                 nuint saveBinPtrOff = (nuint)saveBinPtr;
                 nuint saveBinAGSPtrOff = (nuint)saveBinAGSPtr;
@@ -67,17 +65,22 @@ namespace P3PPC.Expansion.TheAnswer.UI
                 {
                     "use64",
                     $"{hooks.Utilities.GetAbsoluteCallMnemonics(IsTheAnswerSet, out _isTheAnswerSetReverseWrapper)}",
-                    "cmp eax, 0",
-                    "jne AegisSave",
+                    $"cmp rax, {(int)Scenario.Answer}",
+                    "je AegisSave",
+                    "mov edx, 1",
+                    "mov dword [rbx], 2",
                     $"lea rcx, [qword {saveBinPtrOff}]",
-                    $"{hooks.Utilities.GetAbsoluteJumpMnemonics(address + 7, true)}",
+                    $"{hooks.Utilities.GetAbsoluteJumpMnemonics(address + 18, true)}",
                     "label AegisSave",
-                    $"lea rcx, [qword {saveBinAGSPtrOff}]"
-
+                    "mov edx, 1",
+                    "mov dword [rbx], 2",
+                    $"lea rcx, [qword {saveBinAGSPtrOff}]",
+                    $"{hooks.Utilities.GetAbsoluteJumpMnemonics(address + 18, true)}"
                 };
-
-                _isTheAnswerSetHook = hooks.CreateAsmHook(asm, address, AsmHookBehaviour.ExecuteFirst).Activate();
+                _isTheAnswerSetHook = hooks.CreateAsmHook(asm, address, AsmHookBehaviour.DoNotExecuteOriginal).Activate();
             });
         }
+        [Function(new[] { Register.rax, Register.r13 }, Register.rax, true)]
+        private delegate Scenario IsTheAnswerSetDelegate();
     }
 }

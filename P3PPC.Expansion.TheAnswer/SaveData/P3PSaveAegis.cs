@@ -21,39 +21,32 @@ namespace P3PPC.Expansion.TheAnswer.SaveData
         private IAsmHook _isTheAnswerSetHook;
         private IReverseWrapper<IsTheAnswerSetDelegate> _isTheAnswerSetReverseWrapper;
 
-        [Function(new Register[] { Register.rax }, Register.rax, true)]
-        private delegate Scenario IsTheAnswerSetDelegate();
-
-        uint saveFile;
-
         internal void Hook(IReloadedHooks hooks)
         {
             _memory = Memory.Instance;
 
-            string saveIDFormatted = saveFile.ToString("D4");
-
-            string p3pSave = $"P3PSAVE{saveIDFormatted}.BIN";
+            string p3pSave = "P3PSAVE%04d.BIN";
             var p3pSavePtr = (char**)_memory.Allocate((nuint)(sizeof(nuint) * p3pSave.Length)).Address;
             var stringBytes = Encoding.ASCII.GetBytes(p3pSave);
             var stringAddress = _memory.Allocate((nuint)stringBytes.Length).Address;
             _memory.WriteRaw(stringAddress, stringBytes);
             p3pSavePtr = (char**)stringAddress;
 
-            string p3pSaveAegis = $"P3PSAVE{saveIDFormatted}_AEGIS.BIN";
+            string p3pSaveAegis = "P3PSAVE%04d_AEGIS.BIN";
             var p3pSaveAegisPtr = (char**)_memory.Allocate((nuint)(sizeof(nuint) * p3pSaveAegis.Length)).Address;
             var stringBytesAegis = Encoding.ASCII.GetBytes(p3pSaveAegis);
             var stringAddressAegis = _memory.Allocate((nuint)stringBytesAegis.Length).Address;
             _memory.WriteRaw(stringAddressAegis, stringBytesAegis);
             p3pSaveAegisPtr = (char**)stringAddressAegis;
 
-            string p3pSaveSlot = $"P3PSAVE{saveIDFormatted}.BINslot";
+            string p3pSaveSlot = "P3PSAVE%04d.BINslot";
             var p3pSaveSlotPtr = (char**)_memory.Allocate((nuint)(sizeof(nuint) * p3pSaveSlot.Length)).Address;
             var stringBytesSlot = Encoding.ASCII.GetBytes(p3pSaveSlot);
             var stringAddressSlot = _memory.Allocate((nuint)stringBytesSlot.Length).Address;
             _memory.WriteRaw(stringAddressSlot, stringBytesSlot);
             p3pSaveSlotPtr = (char**)stringAddressSlot;
 
-            string p3pSaveAegisSlot = $"P3PSAVE{saveIDFormatted}_AEGIS.BINslot";
+            string p3pSaveAegisSlot = "P3PSAVE%04d_AEGIS.BINslot";
             var p3pSaveAegisSlotPtr = (char**)_memory.Allocate((nuint)(sizeof(nuint) * p3pSaveAegisSlot.Length)).Address;
             var stringBytesAegisSlot = Encoding.ASCII.GetBytes(p3pSaveAegisSlot);
             var stringAddressAegisSlot = _memory.Allocate((nuint)stringBytesAegisSlot.Length).Address;
@@ -68,7 +61,7 @@ namespace P3PPC.Expansion.TheAnswer.SaveData
                 {
                     "use64",
                     $"{hooks.Utilities.GetAbsoluteCallMnemonics(IsTheAnswerSet, out _isTheAnswerSetReverseWrapper)}",
-                    "cmp eax, 0",
+                    $"cmp rax, {(int)Scenario.Answer}",
                     "je AegisSave",
                     "mov r8d, esi",
                     $"lea rdx, [qword {p3pSavePtrOff}]",
@@ -77,10 +70,8 @@ namespace P3PPC.Expansion.TheAnswer.SaveData
                     "mov r8d, esi",
                     $"lea rdx, [qword {p3pSaveAegisPtrOff}]",
                     $"{hooks.Utilities.GetAbsoluteJumpMnemonics(address + 10, true)}"
-
                 };
-
-                _isTheAnswerSetHook = hooks.CreateAsmHook(asm, address, AsmHookBehaviour.ExecuteFirst).Activate();
+                _isTheAnswerSetHook = hooks.CreateAsmHook(asm, address, AsmHookBehaviour.DoNotExecuteOriginal).Activate();
             });
 
             Utils.SigScan("41 89 F0 48 8D 15 ?? ?? ?? ?? 48 8D 8C 24 ?? ?? ?? ?? E8 ?? ?? ?? ?? 48 2B 0D ?? ?? ?? ?? 48 FF CB 80 7B 01 00", "SaveDataSlotAegis", address =>
@@ -91,7 +82,7 @@ namespace P3PPC.Expansion.TheAnswer.SaveData
                 {
                     "use64",
                     $"{hooks.Utilities.GetAbsoluteCallMnemonics(IsTheAnswerSet, out _isTheAnswerSetReverseWrapper)}",
-                    "cmp eax, 0",
+                    $"cmp rax, {(int)Scenario.Answer}",
                     "je AegisSave",
                     "mov r8d, esi",
                     $"lea rdx, [qword {p3pSaveSlotPtrOff}]",
@@ -100,29 +91,11 @@ namespace P3PPC.Expansion.TheAnswer.SaveData
                     "mov r8d, esi",
                     $"lea rdx, [qword {p3pSaveAegisSlotPtrOff}]",
                     $"{hooks.Utilities.GetAbsoluteJumpMnemonics(address + 10, true)}"
-
                 };
-
-                _isTheAnswerSetHook = hooks.CreateAsmHook(asm, address, AsmHookBehaviour.ExecuteAfter).Activate();
+                _isTheAnswerSetHook = hooks.CreateAsmHook(asm, address, AsmHookBehaviour.DoNotExecuteOriginal).Activate();
             });
         }
-        private void SaveDataJourney(nuint stringBuffer, uint saveFile)
-        {
-            string saveIDFormatted = saveFile.ToString("D4");
-
-            _memory.Write(stringBuffer, Encoding.ASCII.GetBytes($"P3PSAVE{saveIDFormatted}.BIN").Length);
-        }
-        private void SaveDataAnswer(nuint stringBuffer, uint saveFile)
-        {
-            string saveIDFormatted = saveFile.ToString("D4");
-
-            _memory.Write(stringBuffer, Encoding.ASCII.GetBytes($"P3PSAVE{saveIDFormatted}_AEGIS.BIN").Length);
-        }
-        private void SaveDataSlotJourney(nuint stringBuffer, uint saveFile)
-        {
-            string saveIDFormatted = saveFile.ToString("D4");
-
-            _memory.Write(stringBuffer, Encoding.ASCII.GetBytes($"P3PSAVE{saveIDFormatted}.BINslot").Length);
-        }
+        [Function(new[] { Register.rax, Register.r13 }, Register.rax, true)]
+        private delegate Scenario IsTheAnswerSetDelegate();
     }
 }

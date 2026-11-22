@@ -1,13 +1,18 @@
-﻿using P3PPC.Expansion.TheAnswer.Configuration;
+﻿using P3PPC.Expansion.TheAnswer.BtlData;
+using P3PPC.Expansion.TheAnswer.Calendar;
+using P3PPC.Expansion.TheAnswer.Character;
+using P3PPC.Expansion.TheAnswer.Configuration;
+using P3PPC.Expansion.TheAnswer.Dungeon;
 using P3PPC.Expansion.TheAnswer.SaveData;
+using P3PPC.Expansion.TheAnswer.TblFiles;
 using P3PPC.Expansion.TheAnswer.Template;
 using P3PPC.Expansion.TheAnswer.Title;
 using P3PPC.Expansion.TheAnswer.UI;
 using Reloaded.Hooks.Definitions;
 using Reloaded.Hooks.Definitions.Enums;
 using Reloaded.Hooks.ReloadedII.Interfaces;
-using Reloaded.Memory.SigScan.ReloadedII.Interfaces;
 using Reloaded.Memory;
+using Reloaded.Memory.SigScan.ReloadedII.Interfaces;
 using Reloaded.Mod.Interfaces;
 using System.Diagnostics;
 using System.IO;
@@ -28,6 +33,18 @@ namespace P3PPC.Expansion.TheAnswer
         internal JourneyAnswerSelect _journeyAnswerSelect = null!;
         internal P3PSaveDataAegis _p3pSaveDataAegis = null!;
         private AGSSaveFileUI _agsSaveFileUI = null!;
+        private AGSSexSelect _agsSexSelect = null!;
+        private BtlTable _btlTable = null!;
+        private EncountBgm _encountBgm = null!;
+        private PartyMemberInfo _partyMemberInfo = null!;
+        private CharacterFModels _characterFModelsInfo = null!;
+        //private IsTheAnswerFlow _isTheAnswerFlow = null!;
+        private SchedulerAegis _schedulerAegis = null!;
+        private PartyAegis _partyAegis = null!;
+        private BattlePackAegis _battlePackAegis = null!;
+        private FloorBgms _floorBgms = null!;
+        private AbyssofTime _abyssofTime = null!;
+        private CutinAegis _cutinAegis = null!;
 
         public Mod(ModContext context)
         {
@@ -56,6 +73,42 @@ namespace P3PPC.Expansion.TheAnswer
 
             _agsSaveFileUI = new AGSSaveFileUI();
             _agsSaveFileUI.Hook(hooks);
+
+            _agsSexSelect = new AGSSexSelect();
+            _agsSexSelect.Hook(hooks);
+
+            _btlTable = new BtlTable();
+            _btlTable.Hook(hooks);
+
+            _encountBgm = new EncountBgm();
+            _encountBgm.Hook(hooks);
+
+            _partyMemberInfo = new PartyMemberInfo();
+            _partyMemberInfo.Hook(hooks);
+
+            _characterFModelsInfo = new CharacterFModels();
+            _characterFModelsInfo.Hook(hooks);
+
+            //_isTheAnswerFlow = new IsTheAnswerFlow();
+            //_isTheAnswerFlow.Hook(hooks);
+
+            _schedulerAegis = new SchedulerAegis();
+            _schedulerAegis.Hook(hooks);
+
+            _partyAegis = new PartyAegis();
+            _partyAegis.Hook(hooks);
+
+            _battlePackAegis = new BattlePackAegis();
+            _battlePackAegis.Hook(hooks);
+
+            _floorBgms = new FloorBgms();
+            _floorBgms.Hook(hooks);
+
+            _abyssofTime = new AbyssofTime();
+            _abyssofTime.Hook(hooks);
+
+            _cutinAegis = new CutinAegis();
+            _cutinAegis.Hook(hooks);
         }
 
 #pragma warning disable CS8618

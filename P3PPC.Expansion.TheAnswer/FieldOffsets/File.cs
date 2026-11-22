@@ -23,7 +23,7 @@ namespace P3PPC.Expansion.TheAnswer.FieldOffsets
 
             [FieldOffset(24)]
             [MarshalAs(UnmanagedType.ByValArray, SizeConst = 256)]
-            internal char path;
+            internal char** path;
 
             [FieldOffset(280)]
             internal void* fileMemory;
